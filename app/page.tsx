@@ -1,11 +1,25 @@
 "use client";
-import Image from "next/image";
 import SortDropdown from "./components/sortDropdown";
 import Contact from "./components/contact";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { io } from "Socket.Io-client";
+
+let socket;
 
 export default function Home() {
   const [activeIndex, setActiveIndex] = useState(-1);
+
+  const socketInitializer = async () => {
+    await fetch("/api/socket");
+    socket = io("http://localhost:3000");
+    socket.on("connect", () => {
+      console.log("connected");
+    });
+  };
+
+  useEffect(() => {
+    // socketInitializer()
+  }, []);
 
   const handleContactClick = (index: number) => {
     setActiveIndex((prevActiveIndex) =>
@@ -13,14 +27,49 @@ export default function Home() {
     );
   };
 
-  // const contacts = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   const contacts = [
-    {name: 'john doe', dpUrl: 'https://picsum.photos/200', lastMessage: 'hello, how are you?', lastTime: '2:40', unreadMessages: 8},
-    {name: 'Kate Rose', dpUrl: 'https://picsum.photos/200', lastMessage: 'good idea', lastTime: '17:54', unreadMessages: 1},
-    {name: 'Robert Parker', dpUrl: 'https://picsum.photos/200', lastMessage: 'hahah funny', lastTime: '7:20', unreadMessages: 7},
-    {name: 'Travis Barker', dpUrl: 'https://picsum.photos/200', lastMessage: 'awesome!', lastTime: '15:23', unreadMessages: 0},
-    {name: 'rick owens', dpUrl: 'https://picsum.photos/200', lastMessage: 'alright, see you tomorrow then', lastTime: '8:10', unreadMessages: 0},
-    {name: 'george orwel', dpUrl: 'https://picsum.photos/200', lastMessage: 'okay, got it', lastTime: '18:15', unreadMessages: 0},
+    {
+      name: "john doe",
+      dpUrl: "https://picsum.photos/200",
+      lastMessage: "hello, how are you?",
+      lastTime: "2:40",
+      unreadMessages: 8,
+    },
+    {
+      name: "Kate Rose",
+      dpUrl: "https://picsum.photos/200",
+      lastMessage: "good idea",
+      lastTime: "17:54",
+      unreadMessages: 1,
+    },
+    {
+      name: "Robert Parker",
+      dpUrl: "https://picsum.photos/200",
+      lastMessage: "hahah funny",
+      lastTime: "7:20",
+      unreadMessages: 7,
+    },
+    {
+      name: "Travis Barker",
+      dpUrl: "https://picsum.photos/200",
+      lastMessage: "awesome!",
+      lastTime: "15:23",
+      unreadMessages: 0,
+    },
+    {
+      name: "rick owens",
+      dpUrl: "https://picsum.photos/200",
+      lastMessage: "alright, see you tomorrow then",
+      lastTime: "8:10",
+      unreadMessages: 0,
+    },
+    {
+      name: "george orwel",
+      dpUrl: "https://picsum.photos/200",
+      lastMessage: "okay, got it",
+      lastTime: "18:15",
+      unreadMessages: 0,
+    },
   ];
 
   return (
@@ -28,7 +77,7 @@ export default function Home() {
       {/* main container */}
       <div className="flex flex-col md:flex-row">
         {/* main left column */}
-        <div className="flex flex-col border-r border-[#EEEEEE] h-screen w-full md:w-1/4 lg:w-1/4 space-y-7">
+        <div className="flex flex-col border-r border-[#EEEEEE] h-screen w-full sm:w-1/2 md:w-1/3 lg:w-1/4 space-y-7">
           {/* top notch */}
           <div className="flex flex-row justify-between items-center p-5">
             <svg
@@ -126,7 +175,9 @@ export default function Home() {
                 onClick={() => handleContactClick(i)}
                 name={contact.name}
                 dpUrl={contact.dpUrl}
-                lastMessage={contact.lastMessage}
+                lastMessage={
+                  i > 2 ? "you: " + contact.lastMessage : contact.lastMessage
+                }
                 lastTime={contact.lastTime}
                 unreadMessages={contact.unreadMessages}
               />
@@ -134,14 +185,19 @@ export default function Home() {
           </div>
         </div>
         {/* display whoever's isActive is true */}
-        {
-          activeIndex !== -1 && (
-            <div>
-              <p>Name: {contacts[activeIndex].name}</p>
-              <p>Last Message: {contacts[activeIndex].lastMessage}</p>
+        {activeIndex !== -1 && (
+          <div className="flex flex-col">
+            <p>Name: {contacts[activeIndex].name}</p>
+            <p>Last Message: {contacts[activeIndex].lastMessage}</p>
+            <div className="w-full">
+              <input
+                className="outline-none w-full"
+                type="text"
+                placeholder="Type your message here.."
+              />
             </div>
-          )
-        }
+          </div>
+        )}
       </div>
     </main>
   );
