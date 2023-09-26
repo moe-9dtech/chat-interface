@@ -1,20 +1,13 @@
 const http = require("http");
 const { Server } = require("socket.io");
-const cors = require("cors");
+// const cors = require("cors");
 
 const httpServer = http.createServer();
 
-const io = new Server(httpServer, {
-  cors: {
-    origin: "http://localhost:3000", // Replace with your frontend URL
-    methods: ["GET", "POST"],
-    allowedHeaders: ["my-custom-header"],
-    credentials: true,
-  },
-});
+const io = new Server(httpServer);
 
 const users = {};
-const rooms = {};
+const rooms = [];
 
 io.on("connection", (socket) => {
   socket.on("new-user", (user) => {
@@ -25,9 +18,9 @@ io.on("connection", (socket) => {
       // Normal user logic (e.g., joining their specific room)
       const roomName = user.username; // Assuming room names are the same as usernames
       socket.join(roomName);
-
-      rooms[socket.id] = roomName;
+      rooms.push(roomName);
     }
+    console.log("Rooms: ", rooms);
   });
 
   socket.on("get-room-list", () => {
@@ -39,18 +32,14 @@ io.on("connection", (socket) => {
   });
 
   socket.on("send-admin-message", (data) => {
-    const { room, message } = data;
-    const timestamp = Date.now();
-    const timeObj = new Date(timestamp);
-    const localTime = timeObj.toLocaleTimeString();
-    const localDate = timeObj.toLocaleDateString();
+    const { room, name, message, date, time } = data;
 
     socket.to(room).emit("admin-chat-message", { 
         room: room,
-        name:"admin",
+        name:name,
         message: message,
-        date: localDate,
-        time: localTime,
+        date: date,
+        time: time,
          });
   });
 
@@ -76,8 +65,11 @@ io.on("connection", (socket) => {
     
   });
   socket.on("disconnect", () => {
-    socket.broadcast.emit("user-disconnected", users[socket.id]);
-    delete users[socket.id];
+    const roomName = rooms[socket.id];
+    if (roomName) {
+      socket.to(roomName).emit("user-disconnected", users[socket.id]);
+      delete users[socket.id];
+    }
   });
 });
 
