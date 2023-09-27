@@ -1,14 +1,17 @@
 "use client";
+// Admin Code
 import SortDropdown from "./components/sortDropdown";
 import Contact from "./components/contact";
 import { useState, useEffect } from "react";
 import { io } from "Socket.Io-client";
+import { loggedUser } from "@/typings";
 
 export default function Home() {
   const [isSocketInitialized, setIsSocketInitialized] =
     useState<boolean>(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [rooms, setRooms] = useState<string[]>([]); //set rooms list -userNames-
+  const [newUser, setNewUser] = useState<loggedUser>();
   const [adminInput, setAdminInput] = useState("");
 
   let socket: any;
@@ -18,20 +21,28 @@ export default function Home() {
       socket = io("http://localhost:3001");
 
       socket.on("connect", () => {
-        
-        console.log("connected");
-        socket.emit("get-room-list");
+        setNewUser(
+        {
+          username: "admin",
+          email: "admin",
+          dpurl: "dp",
+          admin: true
+        });
+        const admin = {username: newUser?.username, admin: true};
+        socket.emit("new-user", admin);
+        console.log("connected as admin");
+        // socket.emit("get-room-list");
         setIsSocketInitialized(true);
       });
 
       socket.on("room-list", (roomList: string[]) => {
         setRooms(roomList);
-        console.log(rooms);
       });
     };
     socketInitializer();
   }, [isSocketInitialized]);
 
+        console.log(rooms);
   // function for sending messages to rooms
   function handleAdminSend() {
     if (!isSocketInitialized) {
@@ -49,7 +60,8 @@ export default function Home() {
       message: adminInput,
       date: localDate,
       time: localTime,
-      sender: "admin"
+      sender: "admin",
+      admin: true
     };
     // Send the message to the selected room
     socket?.emit?.("send-admin-message", adminData);
@@ -85,7 +97,7 @@ export default function Home() {
     {
       name: "Robert Parker",
       dpUrl: "https://picsum.photos/200",
-      lastMessage: "hahah funny",
+      lastMessage: "hahaha funny",
       lastTime: "7:20",
       unreadMessages: 7,
     },
@@ -208,18 +220,18 @@ export default function Home() {
           </div>
           {/* contacts */}
           <div className="flex flex-col">
-            {contacts.map((contact, i) => (
+            {rooms.map((room, i) => (
               <Contact
                 key={i}
                 isActive={i === activeIndex}
                 onClick={() => handleContactClick(i)}
-                name={contact.name}
-                dpUrl={contact.dpUrl}
+                name={room.name}
+                dpUrl={room.dpUrl}
                 lastMessage={
-                  i > 2 ? "you: " + contact.lastMessage : contact.lastMessage
+                  i > 2 ? "you: " + room.lastMessage : room.lastMessage
                 }
-                lastTime={contact.lastTime}
-                unreadMessages={contact.unreadMessages}
+                lastTime={room.lastTime}
+                unreadMessages={room.unreadMessages}
               />
             ))}
           </div>

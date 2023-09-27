@@ -1,12 +1,14 @@
 "use client";
+import { loggedUser, UserData } from "@/typings";
+// Client Code
 import { useState, useEffect } from "react";
 import { io } from "Socket.Io-client";
 
 export default function Home() {
   const [userInput, setUserInput] = useState("");
+  const [newUser, setNewUser] = useState<loggedUser>();
   const [isSocketInitialized, setIsSocketInitialized] =
     useState<boolean>(false);
-  const username = "John Doe";
 
   let socket: any;
   useEffect(() => {
@@ -15,31 +17,33 @@ export default function Home() {
       socket = io("http://localhost:3001");
 
       socket.on("connect", () => {
-        console.log("connected");
-        socket.emit("get-room-list");
-        setIsSocketInitialized(true);
-      });
-
-      socket.on("room-list", (rooms: string[]) => {
-        if (!rooms.includes(username)) {
-          socket.emit("create-room", username);
+        if (window.location.pathname === '/client') {
+          setIsSocketInitialized(true);
+          setNewUser(
+            {
+              username: "yousaf",
+              email: "testmail@gmail.com",
+              dpurl: "https://picsum.photos/200",
+              admin: false,
+            }
+            )
+          const user = {username: newUser?.username, admin: false};
+          socket.emit("new-user", user);
+          console.log("connected");
+          // socket.emit("get-room-list");
         }
       });
+      // socket.on("room-list", (rooms: string[]) => {
+      //   if (!rooms.includes(username)) {
+      //     socket.emit("create-room", username);
+      //   }
+      // });
     };
     socketInitializer();
   }, [isSocketInitialized]);
 
   // function for sending messages to rooms
-  interface UserData {
-    id?: number;
-    username: string;
-    email: string;
-    dpUrl: string;
-    message: string;
-    date: string;
-    time: string;
-    sender: string;
-  }
+  
   let userObj: UserData;
   function handleUserMessageSend() {
     if (!isSocketInitialized) {
@@ -51,15 +55,15 @@ export default function Home() {
     const localTime = timeObj.toLocaleTimeString();
     const localDate = timeObj.toLocaleDateString();
 
-    userObj = {
-      username: "John Doe",
+    newUser ? userObj = {
+      username: newUser?.username,
       email: "abc@gmail.com",
       dpUrl: "https://picsum.photos/200",
       message: userInput,
       date: localDate,
       time: localTime,
       sender: "John Doe",
-    };
+    } : setIsSocketInitialized(false);
     // Send the message to the selected room
     socket?.emit?.("admin-chat-message", userObj);
     console.log(userObj);
