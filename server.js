@@ -12,24 +12,29 @@ const rooms = [];
 io.on("connection", (socket) => {
   socket.on("new-user", (user) => {
     if (user.admin) {
-      // Admin user logic (e.g., joining a special admin room)
       socket.join("admin-room");
+      socket.emit("room-list", rooms)
+
     } else {
       // Normal user logic (e.g., joining their specific room)
       const roomName = user.username; // Assuming room names are the same as usernames
-      socket.join(roomName);
-      rooms.push(roomName);
+      if (!rooms.includes(roomName) && roomName !== undefined) {
+        socket.join(roomName);
+        rooms.push(roomName);
+      } else {
+        socket.join(roomName);
+      }
     }
     console.log("Rooms: ", rooms);
   });
 
-  socket.on("get-room-list", () => {
+  // socket.on("get-room-list", () => {
     // Get the list of rooms (e.g., from a variable or database)
-    const roomList = Object.values(rooms);
+    // const roomList = Object.values(rooms);
 
     // Emit the list of rooms to the admin
-    socket.emit("room-list", roomList);
-  });
+    // socket.emit("room-list", rooms);
+  // });
 
   socket.on("send-admin-message", (data) => {
     const { room, name, message, date, time } = data;
