@@ -8,6 +8,7 @@ export interface loggedUser {
 export interface UserData {
   id?: number;
   username: string;
+  room: string;
   email: string;
   dpUrl: string;
   message: string;

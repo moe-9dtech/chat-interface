@@ -7,10 +7,12 @@ import { io } from "Socket.Io-client";
 export default function Home() {
   const [userInput, setUserInput] = useState("");
   const [newUser, setNewUser] = useState<loggedUser>();
+  const [messages, setMessages] = useState<UserData[]>([]);
   const [isSocketInitialized, setIsSocketInitialized] =
     useState<boolean>(false);
 
   let socket: any;
+  const rooms = new Map();
   useEffect(() => {
     const socketInitializer = async () => {
       // Establish the socket connection
@@ -25,25 +27,35 @@ export default function Home() {
               email: "testmail@gmail.com",
               dpurl: "https://picsum.photos/200",
               admin: false,
-            }
-            )
-          const user = {username: newUser?.username, admin: false};
-          socket.emit("new-user", user);
-          console.log("connected");
-          // socket.emit("get-room-list");
+            });
+          const user = {username: newUser?.username, email: newUser?.email, dpurl: newUser?.dpurl, admin: false};
+            socket.emit("new-user", user);
         }
       });
-      // socket.on("room-list", (rooms: string[]) => {
-      //   if (!rooms.includes(username)) {
-      //     socket.emit("create-room", username);
-      //   }
+      socket.on("admin-chat-message", (data: UserData) => {
+        if (data.sender === "admin" && data.room === newUser?.username) {
+          setMessages((prevMessages:UserData[]) => [...prevMessages, data]);
+        }
+      })
+      // socket.on("send-admin-message", (data: UserData) => {
+      //   const {room, username, message, date, time} = data;
+      //   const roomDetails = rooms.get(room);
+
+      //   roomDetails.messages.push({
+      //     sender: username,
+      //     message: message,
+      //     date: date,
+      //     time: time
+      //   });
+      //   socket.to(room).emit("admin-chat-message", data);
+      //   console.log("from client", data);
+        
       // });
     };
     socketInitializer();
   }, [isSocketInitialized]);
 
   // function for sending messages to rooms
-  
   let userObj: UserData;
   function handleUserMessageSend() {
     if (!isSocketInitialized) {
@@ -57,6 +69,7 @@ export default function Home() {
 
     newUser ? userObj = {
       username: newUser?.username,
+      room: newUser?.username,
       email: "abc@gmail.com",
       dpUrl: "https://picsum.photos/200",
       message: userInput,
@@ -66,16 +79,24 @@ export default function Home() {
     } : setIsSocketInitialized(false);
     // Send the message to the selected room
     socket?.emit?.("admin-chat-message", userObj);
-    console.log(userObj);
-    // then save to the database
-    // clear input field
+    setMessages([...messages, userObj])
     setUserInput("");
+    console.log("messagessss", userObj);
   }
 
   return (
     <main className="flex h-screen flex-col justify-between bg-slate-200">
       {/* display the messages */}
-      <div>messages</div>
+      <div>
+        {
+          messages.map((message, i) => (
+            <div key={i}>
+              {message.sender === newUser?.username ? "Admin: " : "You: "}
+              {message.message}
+            </div>
+          ))
+        }
+      </div>
       <div className="w-full flex flex-row px-5 pb-5">
         <input
           className="outline-none w-full me-4 rounded px-3"
