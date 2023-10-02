@@ -11,7 +11,7 @@ export default function Home() {
   const [isSocketInitialized, setIsSocketInitialized] =
     useState<boolean>(false);
 
-  let socket: any;
+  var socket: any;
   const rooms = new Map();
   useEffect(() => {
     const socketInitializer = async () => {
@@ -19,7 +19,9 @@ export default function Home() {
       socket = io("http://localhost:3001");
 
       socket.on("connect", () => {
-        if (window.location.pathname === '/client') {
+        // if (window.location.pathname === '/client') {
+          console.log("user connected");
+          
           setIsSocketInitialized(true);
           setNewUser(
             {
@@ -30,27 +32,29 @@ export default function Home() {
             });
           const user = {username: newUser?.username, email: newUser?.email, dpurl: newUser?.dpurl, admin: false};
             socket.emit("new-user", user);
-        }
+        // }
       });
       socket.on("admin-chat-message", (data: UserData) => {
+        console.log("event: admin-chat-message");
         if (data.sender === "admin" && data.room === newUser?.username) {
           setMessages((prevMessages:UserData[]) => [...prevMessages, data]);
         }
       })
-      // socket.on("send-admin-message", (data: UserData) => {
-      //   const {room, username, message, date, time} = data;
-      //   const roomDetails = rooms.get(room);
+      socket.on("send-admin-message", (data: UserData) => {
+        console.log("event: send-admin-message")
+        const {room, username, message, date, time} = data;
+        const roomDetails = rooms.get(room);
 
-      //   roomDetails.messages.push({
-      //     sender: username,
-      //     message: message,
-      //     date: date,
-      //     time: time
-      //   });
-      //   socket.to(room).emit("admin-chat-message", data);
-      //   console.log("from client", data);
+        roomDetails.messages.push({
+          sender: username,
+          message: message,
+          date: date,
+          time: time
+        });
+        socket.to(room).emit("admin-chat-message", data);
+        console.log("from client", data);
         
-      // });
+      });
     };
     socketInitializer();
   }, [isSocketInitialized]);
@@ -58,6 +62,9 @@ export default function Home() {
   // function for sending messages to rooms
   let userObj: UserData;
   function handleUserMessageSend() {
+    socket = io("http://localhost:3001")
+    console.log("send message function triggered");
+    
     if (!isSocketInitialized) {
       console.error("Socket is not Initialized yet");
       return;
@@ -78,11 +85,17 @@ export default function Home() {
       sender: "John Doe",
     } : setIsSocketInitialized(false);
     // Send the message to the selected room
-    socket?.emit?.("admin-chat-message", userObj);
+    socket.emit("send-client-message", userObj);
     setMessages([...messages, userObj])
     setUserInput("");
     console.log("messagessss", userObj);
   }
+  // socket?.on("receive-admin-message", (data: UserData) => {
+  //   console.log("event: receive-admin-message");
+    
+  //   console.log(data);
+    
+  // })
 
   return (
     <main className="flex h-screen flex-col justify-between bg-slate-200">

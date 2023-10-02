@@ -5,8 +5,14 @@ const io = new Server(httpServer);
 
 const users = {};
 const rooms = new Map();
-
-io.on("connection", (socket) => {
+// .on connection
+// .on new-user
+// .emit room-list
+// .on/.emit send-admin-message
+// .on/.emit admin-chat-message
+// .on send-chat-message
+// .emin chat-message
+io.on("connect", (socket) => {
   socket.on("new-user", (user) => {
     if (user.admin) {
       socket.join("admin-room");
@@ -15,7 +21,7 @@ io.on("connection", (socket) => {
           user: user,
           messages:[],
         });
-      socket.emit("room-list", rooms)
+      socket.emit("room-list", Object.fromEntries(rooms));
     } else {
       const roomName = user.username;
       if (!rooms.has(roomName) && roomName !== undefined) {
@@ -28,52 +34,69 @@ io.on("connection", (socket) => {
         socket.join(roomName);
     }
   });
+  console.log(rooms);
 
   socket.on("send-admin-message", (data) => {
-    console.log(data);
-    const { room, name, message, date, time } = data;
+    console.log("send-admin-message");
+    const { room, message, date, time } = data;
     const roomDetails = rooms.get(room);
+
+    // Update the messages array
     roomDetails.messages.push({
       sender:"admin",
       message:message,
       date: date,
       time: time,
     });
+    // Update the room details back into the Map
+    rooms.set(room, roomDetails);
+    console.log("updated rooms after admin message:", rooms);
     socket.to(room).emit("admin-chat-message", data);
-    console.log("Updated Rooms Map:", rooms);
   });
 
-  socket.on("admin-chat-message", (data) => {
-    console.log("admin-chat-message", data);
-    const {room, message, date, time} = data
-    let roomDetails = rooms.get(room);
+  socket.on("send-admin-message", (data) => {
+    console.log("admin-chat-message");
+    console.log("data", data);
+    const {room, message, date, time, sender} = data
+    const roomDetails = rooms.get(room);
+    // Update the messages array
     roomDetails.messages.push({
       sender: roomDetails.user.username,
       message:message,
       date:date,
       time: time,
     });
-    socket.to(room).emit("chat-message", data);
+
+    // Update the room details back into the Map
+    rooms.set(room, roomDetails);
+    socket.to(room).emit("receive-admin-message", data);
   });
 
-  socket.on("send-chat-message", (data) => {
+  socket.on("send-client-message", (data) => {
+    console.log("event: send-client-message");
     const {room, message, date, time, sender} = data;
     const roomDetails = rooms.get(room);
+    // Update the messages array
     roomDetails.messages.push({
       sender:sender,
       message:message,
       date: date,
       time: time,
     });
-    socket.to(room).emit("chat-message", data);
+    // Update the room details back into the Map
+    rooms.set(room, roomDetails);
+    console.log("updated rooms after user message: ", rooms);
+    socket.to(room).emit("recieve-client-message", data);
   });
 
   socket.on("disconnect", () => {
-    const roomName = rooms[socket.id];
-    if (roomName) {
-      socket.to(roomName).emit("user-disconnected", users[socket.id]);
-      delete users[socket.id];
-    }
+    const roomName = Array.from(rooms.keys()).find(
+    (key) => rooms.get(key) === socket.id
+  );
+  if (roomName) {
+    socket.to(roomName).emit("user-disconnected", users[socket.id]);
+    delete users[socket.id];
+  }
   });
 });
 

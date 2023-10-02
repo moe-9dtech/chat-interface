@@ -4,7 +4,7 @@ import SortDropdown from "./components/sortDropdown";
 import Contact from "./components/contact";
 import { useState, useEffect } from "react";
 import { io } from "Socket.Io-client";
-import { loggedUser } from "@/typings";
+import { UserData, loggedUser } from "@/typings";
 
 export default function Home() {
   const [isSocketInitialized, setIsSocketInitialized] =
@@ -13,7 +13,11 @@ export default function Home() {
   const [rooms, setRooms] = useState<string[]>([]); //set rooms list -userNames-
   const [newUser, setNewUser] = useState<loggedUser>();
   const [adminInput, setAdminInput] = useState("");
-
+// .on connection
+// .on room-list
+// .emit new-user
+// .emin send-admin-message
+// 
   let socket: any;
   useEffect(() => {
     const socketInitializer = async () => {
@@ -28,21 +32,24 @@ export default function Home() {
           dpurl: "dp",
           admin: true
         });
-        const admin = {username: newUser?.username, admin: true};
-        socket.emit("new-user", admin);
-        console.log("connected as admin");
+        // const admin = {username: newUser?.username, admin: true};
+        socket.emit("new-user", {usrname: "admin", admin: true});
         // socket.emit("get-room-list");
         setIsSocketInitialized(true);
       });
 
       socket.on("room-list", (roomList: string[]) => {
+        console.log("event: room-list");
         setRooms(roomList);
       });
+
+      console.log("connected as admin");
+      
     };
     socketInitializer();
+    console.log("rooms", rooms);
   }, [isSocketInitialized]);
 
-        console.log(rooms);
   // function for sending messages to rooms
   function handleAdminSend() {
     if (!isSocketInitialized) {
@@ -71,7 +78,9 @@ export default function Home() {
     // clear input field
     setAdminInput("");
   }
-
+  socket?.on("receive-client-message", (data:UserData) => {
+    console.log(data);
+  })
 
   const handleContactClick = (index: number) => {
     setActiveIndex((prevActiveIndex) =>
@@ -220,7 +229,7 @@ export default function Home() {
           </div>
           {/* contacts */}
           <div className="flex flex-col">
-            {rooms.map((room, i) => (
+            {contacts.map((room, i) => (
               <Contact
                 key={i}
                 isActive={i === activeIndex}
