@@ -86,6 +86,7 @@ export default function Home() {
     } : setIsSocketInitialized(false);
     // Send the message to the selected room
     socket.emit("send-client-message", userObj);
+    
     setMessages([...messages, userObj])
     setUserInput("");
     console.log("messagessss", userObj);

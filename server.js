@@ -13,6 +13,7 @@ const rooms = new Map();
 // .on send-chat-message
 // .emin chat-message
 io.on("connect", (socket) => {
+
   socket.on("new-user", (user) => {
     if (user.admin) {
       socket.join("admin-room");
@@ -21,7 +22,6 @@ io.on("connect", (socket) => {
           user: user,
           messages:[],
         });
-      socket.emit("room-list", Object.fromEntries(rooms));
     } else {
       const roomName = user.username;
       if (!rooms.has(roomName) && roomName !== undefined) {
@@ -31,10 +31,10 @@ io.on("connect", (socket) => {
           messages:[],
         });
       }
+    // socket.emit("room-list", Array.from(rooms.keys()));
         socket.join(roomName);
     }
   });
-  console.log(rooms);
 
   socket.on("send-admin-message", (data) => {
     console.log("send-admin-message");
@@ -57,7 +57,7 @@ io.on("connect", (socket) => {
   socket.on("send-admin-message", (data) => {
     console.log("admin-chat-message");
     console.log("data", data);
-    const {room, message, date, time, sender} = data
+    const {room, message, date, time} = data
     const roomDetails = rooms.get(room);
     // Update the messages array
     roomDetails.messages.push({
@@ -85,7 +85,11 @@ io.on("connect", (socket) => {
     });
     // Update the room details back into the Map
     rooms.set(room, roomDetails);
-    console.log("updated rooms after user message: ", rooms);
+    console.log("single room after setting it: ", roomDetails);
+    rooms.forEach((roomData, roomName) => {
+      console.log(roomName, roomData);
+    })
+
     socket.to(room).emit("recieve-client-message", data);
   });
 
