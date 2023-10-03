@@ -4,13 +4,14 @@ import SortDropdown from "./components/sortDropdown";
 import Contact from "./components/contact";
 import { useState, useEffect } from "react";
 import { io } from "Socket.Io-client";
-import { UserData, loggedUser } from "@/typings";
+import { Room, UserData, loggedUser } from "@/typings";
 
 export default function Home() {
   const [isSocketInitialized, setIsSocketInitialized] =
     useState<boolean>(false);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const [rooms, setRooms] = useState<string[]>([]); //set rooms list -userNames-
+  const [messages, setMessages] = useState<UserData[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]); //set rooms list -userNames-
   const [newUser, setNewUser] = useState<loggedUser>();
   const [adminInput, setAdminInput] = useState("");
 // .on connection
@@ -39,11 +40,14 @@ export default function Home() {
       });
 
       socket.on("room-list", (roomList: string[]) => {
-        console.log("event: room-list");
-        setRooms(roomList);
+        const listMap = new Map(Object.entries(roomList));
+        var roomArray = Array.from(listMap.values())
+        
+        setRooms(roomArray);
+        
+        
       });
 
-      console.log("connected as admin");
       
     };
     socketInitializer();
@@ -52,32 +56,48 @@ export default function Home() {
 
   // function for sending messages to rooms
   function handleAdminSend() {
+    socket = io("http://localhost:3001");
+    console.log("send message function triggered");
+
     if (!isSocketInitialized) {
       console.error("Socket is not Initialized yet");
       return;
     }
-
+    function formatTime24Hours(date: any) {
+      const hours = date.getHours().toString().padStart(2, "0");
+      const minutes = date.getMinutes().toString().padStart(2, "0");
+      const seconds = date.getSeconds().toString().padStart(2, "0");
+      return `${hours}:${minutes}:${seconds}`;
+    }
     const timestamp = Date.now();
     const timeObj = new Date(timestamp);
-    const localTime = timeObj.toLocaleTimeString();
+
+    // const options = { hour: "2-digit", minute: "2-digit" };
+    // const localTime = timeObj.toLocaleTimeString(undefined, options);
+
+    const localTime = formatTime24Hours(timeObj);
     const localDate = timeObj.toLocaleDateString();
-    const adminData = {
-      room: contacts[activeIndex].name,
-      name: "admin",
-      message: adminInput,
-      date: localDate,
-      time: localTime,
-      sender: "admin",
-      admin: true
-    };
+    const adminObj ={ 
+          username: "admin",
+          room: roomName,
+          email: "abc@gmail.com",
+          dpUrl: "https://picsum.photos/200",
+          message: adminInput,
+          date: localDate,
+          time: localTime,
+          sender: "admin",
+        }
     // Send the message to the selected room
-    socket?.emit?.("send-admin-message", adminData);
-    console.log(adminData);
+    socket.emit("send-admin-message", adminObj);
+
+    setMessages([...messages, adminObj]);
+    console.log("messagessss", adminObj);
     // then save to the database
 
     // clear input field
     setAdminInput("");
   }
+
   socket?.on("receive-client-message", (data:UserData) => {
     console.log(data);
   })
@@ -133,6 +153,7 @@ export default function Home() {
     },
   ];
 
+  let roomName: string;
   return (
     <main className="flex h-screen flex-col justify-between">
       {/* main container */}
@@ -229,30 +250,63 @@ export default function Home() {
           </div>
           {/* contacts */}
           <div className="flex flex-col">
-            {contacts.map((room, i) => (
+            { (rooms && rooms.length !== 0) ? 
+            (rooms.map((room, i) => {
+              if (room[0] === 'admin-room' || room[0] === 'admin') {
+                return null;
+              }
+              roomName = room[0];
+              const roomData = room[1];
+
+              // User Data
+              // const name = roomData.user.username,
+              const dpUrl = roomData ? roomData.user.dpurl : "";
+
+              // latest Message Data
+
+              const latestMessage = roomData ? roomData.messages[roomData.messages.length - 1] : "",
+              lastMessage = (latestMessage && latestMessage.sender === "admin") ? 
+              `You: ${latestMessage.message}` :
+              (latestMessage && latestMessage.sender !== "admin") ?
+              `${latestMessage.message}` :
+              `Start A conversation with ${roomName}`,
+              // LtestMessageSender = latestMessage ? latestMessage.sender : '',
+              latestMessageTime = latestMessage? latestMessage.time : "";
+              
+              return (
               <Contact
                 key={i}
                 isActive={i === activeIndex}
                 onClick={() => handleContactClick(i)}
-                name={room.name}
-                dpUrl={room.dpUrl}
-                lastMessage={
-                  i > 2 ? "you: " + room.lastMessage : room.lastMessage
-                }
-                lastTime={room.lastTime}
-                unreadMessages={room.unreadMessages}
+                name={roomName}
+                dpUrl={dpUrl}
+                lastMessage={lastMessage}
+                lastTime={latestMessageTime}
+                unreadMessages= {5}
               />
-            ))}
+              )
+              })) : "No Chats"
+              }
           </div>
         </div>
         {/* display whoever's isActive is true */}
         {activeIndex !== -1 ? (
-          <div id="js-messages" className="flex flex-col">
-            <p>Name: {contacts[activeIndex].name}</p>
-            <p>Last Message: {contacts[activeIndex].lastMessage}</p>
-            <div className="w-full flex flex-row">
+          <div id="js-messages" className="flex flex-col justify-between h-screen">
+              {/* <p>Name: {roomName}</p> */}
+
+              {
+                messages.map((message,i) => (
+                <div key={i} className="flex flex-col items-end bg-[#F24187] rounded-lg w-fit p-1 ms-auto me-[15px] mb-5">
+                  <p className="text-[#FAFAFA] text-[14px] font-normal">{message.message}</p>
+                  <p className="text-[#FAFAFA] text-[12px] font-normal">{`${message.time.split(":")[0]}:${message.time.split(":")[1]}`}</p>
+                </div>
+                ))
+              }
+
+
+            <div className="w-full px-5 pb-5">
               <input
-                className="outline-none w-full"
+                className="outline-none"
                 type="text"
                 value={adminInput}
                 onChange={(e) => setAdminInput(e.target.value)}
