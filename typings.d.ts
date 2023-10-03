@@ -16,3 +16,11 @@ export interface UserData {
   time: string;
   sender: string;
 }
+
+export type Room = [
+  string, // Room name = user name
+  {
+    user: { username: string; dpurl: string };
+    messages: { sender: string; message: string; date: string; time: string }[];
+  }
+];
