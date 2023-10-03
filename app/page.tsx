@@ -157,7 +157,7 @@ export default function Home() {
   return (
     <main className="flex h-screen flex-col justify-between">
       {/* main container */}
-      <div className="flex flex-col md:flex-row">
+      <div className="flex flex-col md:flex-row md:justify-between">
         {/* main left column */}
         <div className="flex flex-col border-r border-[#EEEEEE] h-screen w-full sm:w-1/2 md:w-1/3 lg:w-1/4 space-y-7">
           {/* top notch */}
@@ -291,12 +291,12 @@ export default function Home() {
         </div>
         {/* display whoever's isActive is true */}
         {activeIndex !== -1 ? (
-          <div id="js-messages" className="flex flex-col justify-between h-screen">
+          <div id="js-messages" className="flex flex-col justify-end w-full">
               {/* <p>Name: {roomName}</p> */}
 
               {
                 messages.map((message,i) => (
-                <div key={i} className="flex flex-col items-end bg-[#F24187] rounded-lg w-fit p-1 ms-auto me-[15px] mb-5">
+                <div key={i} className="flex flex-col items-end bg-[#F24187] rounded-lg w-fit px-2 py-1 ms-auto me-[15px] mb-2">
                   <p className="text-[#FAFAFA] text-[14px] font-normal">{message.message}</p>
                   <p className="text-[#FAFAFA] text-[12px] font-normal">{`${message.time.split(":")[0]}:${message.time.split(":")[1]}`}</p>
                 </div>
@@ -304,9 +304,9 @@ export default function Home() {
               }
 
 
-            <div className="w-full px-5 pb-5">
+            <div className="px-5 pb-5 flex flex-row mt-4">
               <input
-                className="outline-none"
+                className="outline-none w-full bg-[#FFF1F7] px-2 py-4 me-5 rounded"
                 type="text"
                 value={adminInput}
                 onChange={(e) => setAdminInput(e.target.value)}

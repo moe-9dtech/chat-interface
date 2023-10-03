@@ -116,7 +116,7 @@ export default function Home() {
   return (
     <main className="flex h-screen flex-col justify-end bg-slate-200">
       {/* display the messages */}
-      <div className="ms-auto me-[15px] mb-5">
+      <div className="flex flex-col items-end ms-auto me-[15px] mb-5">
         {messages.map((message, i) => (
           <div
             key={i}
