@@ -94,11 +94,12 @@ io.on("connect", (socket) => {
     rooms.set(room, roomDetails);
     console.log("single room after setting it: ", roomDetails);
     rooms.forEach((roomData, roomName) => {
-      console.log(roomName, roomData);
+      // console.log(roomName, roomData);
     })
 
     socket.emit("room-list", Array.from(rooms.entries()));
     socket.to(room).emit("recieve-client-message", data);
+    // console.log({data});
   });
 
   socket.on("disconnect", () => {

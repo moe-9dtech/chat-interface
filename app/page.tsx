@@ -14,11 +14,7 @@ export default function Home() {
   const [rooms, setRooms] = useState<Room[]>([]); //set rooms list -userNames-
   const [newUser, setNewUser] = useState<loggedUser>();
   const [adminInput, setAdminInput] = useState("");
-// .on connection
-// .on room-list
-// .emit new-user
-// .emin send-admin-message
-// 
+
   let socket: any;
   useEffect(() => {
     const socketInitializer = async () => {
@@ -44,8 +40,6 @@ export default function Home() {
         var roomArray = Array.from(listMap.values())
         
         setRooms(roomArray);
-        
-        
       });
 
       
@@ -89,6 +83,7 @@ export default function Home() {
         }
     // Send the message to the selected room
     socket.emit("send-admin-message", adminObj);
+    // socket.to(roomName).emit("room-list", adminObj);
 
     setMessages([...messages, adminObj]);
     console.log("messagessss", adminObj);
@@ -99,7 +94,7 @@ export default function Home() {
   }
 
   socket?.on("receive-client-message", (data:UserData) => {
-    console.log(data);
+    // console.log(data);
   })
 
   const handleContactClick = (index: number) => {
@@ -293,12 +288,16 @@ export default function Home() {
         {activeIndex !== -1 ? (
           <div id="js-messages" className="flex flex-col justify-end w-full">
               {/* <p>Name: {roomName}</p> */}
-
               {
-                messages.map((message,i) => (
-                <div key={i} className="flex flex-col items-end bg-[#F24187] rounded-lg w-fit px-2 py-1 ms-auto me-[15px] mb-2">
-                  <p className="text-[#FAFAFA] text-[14px] font-normal">{message.message}</p>
-                  <p className="text-[#FAFAFA] text-[12px] font-normal">{`${message.time.split(":")[0]}:${message.time.split(":")[1]}`}</p>
+                rooms[activeIndex][1].messages.map((message,i) => (
+                <div key={i} className={`flex flex-col items-${message.sender === "admin" ? "end" : "start"} ${message.sender === "admin" ? "bg-[#F24187]" :
+                 "bg-[#F4F4F7]"} rounded-lg w-fit px-2 py-1 ms-auto me-[15px] mb-2`}>
+                  <p className={`${message.sender === "admin" ? "text-[#FAFAFA]" : "text-[#494345]"} text-[14px] font-normal`}>
+                    {message.sender === "admin" ? `You: ${message.message}` : message.message}
+                  </p>
+                  <p className={`${message.sender === "admin" ? "text-[#FAFAFA]" : "text-[#00000073]"} text-[12px] font-light`}>
+                    {`${message.time.split(":")[0]}:${message.time.split(":")[1]}`}
+                  </p>
                 </div>
                 ))
               }
