@@ -48,7 +48,7 @@ export default function Contact({
       </div>
       <div className="flex flex-col items-end">
         {/* time, badge, maybe date! */}
-        <p className="text-[14px] font-[#000000A6] font-normal">{`${lastTime.split(":")[0]}:${lastTime.split(":")[1]}`}</p>
+        <p className="text-[14px] font-[#000000A6] font-normal">{`${lastTime ? lastTime.split(":")[0] : ""}${lastTime ? ":" : ""}${lastTime ? lastTime.split(":")[1] : ""}`}</p>
         {unreadMessages !== 0 && (
           <div className="bg-[#F24187] flex justify-center items-center rounded-full w-[20px] h-[20px]">
             <p className="text-white font-medium text-[12px]">

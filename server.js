@@ -61,24 +61,6 @@ io.on("connect", (socket) => {
     socket.to(room).emit("recieve-client-message", data);
   });
 
-  // socket.on("send-admin-message", (data) => {
-  //   console.log("admin-chat-message");
-  //   console.log("data", data);
-  //   const {room, message, date, time} = data
-  //   const roomDetails = rooms.get(room);
-  //   // Update the messages array
-  //   roomDetails.messages.push({
-  //     sender: roomDetails.user.username,
-  //     message:message,
-  //     date:date,
-  //     time: time,
-  //   });
-
-  //   // Update the room details back into the Map
-  //   rooms.set(room, roomDetails);
-  //   socket.to(room).emit("receive-admin-message", data);
-  // });
-
   socket.on("send-client-message", (data) => {
     console.log("event: send-client-message");
     const {room, message, date, time, sender} = data;
@@ -94,11 +76,12 @@ io.on("connect", (socket) => {
     rooms.set(room, roomDetails);
     console.log("single room after setting it: ", roomDetails);
     rooms.forEach((roomData, roomName) => {
-      console.log(roomName, roomData);
+      // console.log(roomName, roomData);
     })
 
     socket.emit("room-list", Array.from(rooms.entries()));
-    socket.to(room).emit("recieve-client-message", data);
+    socket.to(data.room).emit("receive-client-message", data);
+    // console.log({data});
   });
 
   socket.on("disconnect", () => {
