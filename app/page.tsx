@@ -17,9 +17,9 @@ export default function Home() {
   const [socket, setSocket] = useState();
 
   var newSocket: any;
+  newSocket = io("http://localhost:3001");
   useEffect(() => {
     // Establish the socket connection
-    newSocket = io("http://localhost:3001");
 
     newSocket.on("connect", () => {
       setNewUser({
@@ -42,17 +42,42 @@ export default function Home() {
       setRooms(roomArray);
     });
 
-    newSocket.on("send-client-message", (data: UserData) => {
-      console.log("event receive-client-message fired");
-      console.log(data);
-    });
+    // newSocket.on("receive-client-message", (data: UserData) => {
+    //   console.log('event "receive-client-message" fired ');
 
+    //   const receivedMessage = {
+    //     sender: data.sender, // Should be "client"
+    //     message: data.message,
+    //     time: data.time,
+    //     date: data.date,
+    //   };
+
+    //   // Update your state to include the received message
+    //   setRooms((prevRooms) => {
+    //     return prevRooms.map((room) => {
+    //       if (room[0] === roomName) {
+    //         return {
+    //           ...room,
+    //           messages: [...room[1].messages, receivedMessage],
+    //         };
+    //       }
+    //       return room;
+    //     });
+    //   });
+    // });
+    
+    console.log("useEffect triggered");
     setSocket(newSocket);
   }, []);
 
-  
+  if(!socket) {
+    console.log("no socket");
+    return;
+  } else {
+    console.log("socket is available");
+    
     socket.on("receive-client-message", (data: UserData) => {
-      console.log("event fired ");
+      console.log('event "receive-client-message" fired ');
 
       const receivedMessage = {
         sender: data.sender, // Should be "client"
@@ -67,14 +92,15 @@ export default function Home() {
           if (room[0] === roomName) {
             return {
               ...room,
-              messages: [...room[1].messages, data],
+              messages: [...room[1].messages, receivedMessage],
             };
           }
           return room;
         });
       });
     });
-  
+  }
+
 
   // function for sending messages to rooms
   function handleAdminSend() {
@@ -132,50 +158,7 @@ export default function Home() {
     );
   };
 
-  const contacts = [
-    {
-      name: "john doe",
-      dpUrl: "https://picsum.photos/200",
-      lastMessage: "hello, how are you?",
-      lastTime: "2:40",
-      unreadMessages: 8,
-    },
-    {
-      name: "Kate Rose",
-      dpUrl: "https://picsum.photos/200",
-      lastMessage: "good idea",
-      lastTime: "17:54",
-      unreadMessages: 1,
-    },
-    {
-      name: "Robert Parker",
-      dpUrl: "https://picsum.photos/200",
-      lastMessage: "hahaha funny",
-      lastTime: "7:20",
-      unreadMessages: 7,
-    },
-    {
-      name: "Travis Barker",
-      dpUrl: "https://picsum.photos/200",
-      lastMessage: "awesome!",
-      lastTime: "15:23",
-      unreadMessages: 0,
-    },
-    {
-      name: "rick owens",
-      dpUrl: "https://picsum.photos/200",
-      lastMessage: "alright, see you tomorrow then",
-      lastTime: "8:10",
-      unreadMessages: 0,
-    },
-    {
-      name: "george orwel",
-      dpUrl: "https://picsum.photos/200",
-      lastMessage: "okay, got it",
-      lastTime: "18:15",
-      unreadMessages: 0,
-    },
-  ];
+  
 
   let roomName: string;
   return (

@@ -80,7 +80,7 @@ io.on("connect", (socket) => {
     })
 
     socket.emit("room-list", Array.from(rooms.entries()));
-    socket.to(data.room).emit("receive-client-message", data);
+    socket.emit("receive-client-message", data);
     // console.log({data});
   });
 
