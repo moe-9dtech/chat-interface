@@ -18,9 +18,21 @@ export interface UserData {
 }
 
 export type Room = [
-  string, // Room name = user name
+  string,
   {
-    user: { username: string; dpurl: string };
-    messages: { sender: string; message: string; date: string; time: string }[];
+    admin: string;
+    user: {
+      username: string;
+      email: string;
+      dpurl: string;
+      admin: boolean;
+    };
+    messages: {
+      sender: string;
+      message: string;
+      date: string;
+      time: string;
+    }[];
   }
 ];
+
