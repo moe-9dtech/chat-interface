@@ -64,6 +64,7 @@ io.on("connect", (socket) => {
   socket.on("send-client-message", (data) => {
     console.log("event: send-client-message");
     const {room, message, date, time, sender} = data;
+    socket.to("admin-room").emit("receive-client-message", data);
     const roomDetails = rooms.get(room);
     // Update the messages array
     roomDetails.messages.push({
@@ -75,12 +76,8 @@ io.on("connect", (socket) => {
     // Update the room details back into the Map
     rooms.set(room, roomDetails);
     console.log("single room after setting it: ", roomDetails);
-    rooms.forEach((roomData, roomName) => {
-      // console.log(roomName, roomData);
-    })
 
     socket.emit("room-list", Array.from(rooms.entries()));
-    socket.emit("receive-client-message", data);
     // console.log({data});
   });
 

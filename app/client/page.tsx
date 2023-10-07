@@ -12,11 +12,11 @@ export default function Home() {
     useState<boolean>(false);
 
   var socket: any;
+  socket = io("http://localhost:3001");
   const rooms = new Map();
   useEffect(() => {
     const socketInitializer = async () => {
       // Establish the socket connection
-      socket = io("http://localhost:3001");
 
       socket.on("connect", () => {
         // if (window.location.pathname === '/client') {
@@ -61,6 +61,8 @@ export default function Home() {
     };
     socketInitializer();
   }, [isSocketInitialized]);
+
+ 
 
   // function for sending messages to rooms
   let userObj: UserData;

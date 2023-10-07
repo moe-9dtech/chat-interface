@@ -21,6 +21,7 @@ export default function Home() {
   useEffect(() => {
     // Establish the socket connection
 
+    setSocket(newSocket);
     newSocket.on("connect", () => {
       setNewUser({
         username: "admin",
@@ -41,66 +42,38 @@ export default function Home() {
 
       setRooms(roomArray);
     });
-
-    // newSocket.on("receive-client-message", (data: UserData) => {
-    //   console.log('event "receive-client-message" fired ');
-
-    //   const receivedMessage = {
-    //     sender: data.sender, // Should be "client"
-    //     message: data.message,
-    //     time: data.time,
-    //     date: data.date,
-    //   };
-
-    //   // Update your state to include the received message
-    //   setRooms((prevRooms) => {
-    //     return prevRooms.map((room) => {
-    //       if (room[0] === roomName) {
-    //         return {
-    //           ...room,
-    //           messages: [...room[1].messages, receivedMessage],
-    //         };
-    //       }
-    //       return room;
-    //     });
-    //   });
-    // });
-    
-    console.log("useEffect triggered");
-    setSocket(newSocket);
   }, []);
 
-  if(!socket) {
-    console.log("no socket");
-    return;
-  } else {
-    console.log("socket is available");
-    
-    socket.on("receive-client-message", (data: UserData) => {
-      console.log('event "receive-client-message" fired ');
+  newSocket.on("receive-client-message", (userObj: UserData) => {
+    const { sender, message, date, time } = userObj;
+    console.log('event "receive-client-message" fird ');
 
-      const receivedMessage = {
-        sender: data.sender, // Should be "client"
-        message: data.message,
-        time: data.time,
-        date: data.date,
-      };
+    const receivedMessage = {
+      sender: sender,
+      message: message,
+      date: date,
+      time: time
+    };
 
-      // Update your state to include the received message
-      setRooms((prevRooms) => {
-        return prevRooms.map((room) => {
-          if (room[0] === roomName) {
-            return {
-              ...room,
+    // Update your state to include the received message
+    setRooms((prevRooms) => {
+      return prevRooms.map((room) => {
+
+        if (room[0] === userObj.room) {
+          console.log("success!");
+
+          return [
+            room[0],
+            {
+              ...room[1],
               messages: [...room[1].messages, receivedMessage],
-            };
-          }
-          return room;
-        });
+            }
+          ];
+        }
+        return room;
       });
     });
-  }
-
+  });
 
   // function for sending messages to rooms
   function handleAdminSend() {
@@ -158,7 +131,8 @@ export default function Home() {
     );
   };
 
-  
+  console.log({ rooms });
+  console.log(activeIndex);
 
   let roomName: string;
   return (
