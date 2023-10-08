@@ -1,13 +1,12 @@
 "use client";
-import { loggedUser, UserData } from "@/typings";
-// Client Code
+import { loggedUser, Room, UserData } from "@/typings";
 import { useState, useEffect } from "react";
 import { io } from "Socket.Io-client";
 
 export default function Home() {
   const [userInput, setUserInput] = useState("");
   const [newUser, setNewUser] = useState<loggedUser>();
-  const [messages, setMessages] = useState<UserData[]>([]);
+  const [room, setRoom] = useState<Room>();
   const [isSocketInitialized, setIsSocketInitialized] =
     useState<boolean>(false);
 
@@ -15,65 +14,75 @@ export default function Home() {
   socket = io("http://localhost:3001");
   const rooms = new Map();
   useEffect(() => {
-    const socketInitializer = async () => {
-      // Establish the socket connection
+    socket.on("connect", () => {
+      const user = {
+        username: "yousaf",
+        email: "testmail@gmail.com",
+        dpurl: "https://picsum.photos/200",
+        admin: false,
+      };
+      setNewUser(user);
+      socket.emit("new-user", {
+        username: user.username,
+        email: user.email,
+        dpurl: user.dpurl,
+        admin: user.admin,
+      });
+      setIsSocketInitialized(true);
+    });
 
-      socket.on("connect", () => {
-        // if (window.location.pathname === '/client') {
-        console.log("user connected");
+    socket.on("room-list", (roomList: string[]) => {
+      console.log({ newUser });
 
-        setIsSocketInitialized(true);
-        setNewUser({
-          username: "yousaf",
-          email: "testmail@gmail.com",
-          dpurl: "https://picsum.photos/200",
-          admin: false,
+      if (newUser) {
+        const userRoom = roomList.find((room) => {
+          return room[0] === newUser.username;
         });
-        const user = {
-          username: newUser?.username,
-          email: newUser?.email,
-          dpurl: newUser?.dpurl,
-          admin: false,
-        };
-        socket.emit("new-user", user);
-        // }
-      });
-      socket.on("admin-chat-message", (data: UserData) => {
-        console.log("event: admin-chat-message");
-        if (data.sender === "admin" && data.room === newUser?.username) {
-          setMessages((prevMessages: UserData[]) => [...prevMessages, data]);
-        }
-      });
-      socket.on("send-admin-message", (data: UserData) => {
-        console.log("event: send-admin-message");
-        const { room, username, message, date, time } = data;
-        const roomDetails = rooms.get(room);
-
-        roomDetails.messages.push({
-          sender: username,
-          message: message,
-          date: date,
-          time: time,
-        });
-        socket.to(room).emit("admin-chat-message", data);
-        console.log("from client", data);
-      });
-    };
-    socketInitializer();
+        console.log({ userRoom });
+        setRoom(userRoom);
+      } else {
+        console.log("no user logged in");
+        return;
+      }
+    });
   }, [isSocketInitialized]);
 
- 
+  socket.on("get-admin-message", (data: UserData) => {
+    console.log(data);
+    
+    console.log("event: get-admin-message");
+    const { room, username, message, date, time } = data;
+    const receivedMessage = {
+      sender: username,
+      message: message,
+      date: date,
+      time: time
+    };
+
+    // Update your state to include the received message
+    setRoom((prevRoom) => {
+      if (!prevRoom) {
+        return prevRoom;
+      }
+      return [
+        prevRoom[0],
+        {
+          ...prevRoom[1],
+          messages: [...prevRoom[1].messages, receivedMessage],
+        },
+      ];
+    });
+
+  });
 
   // function for sending messages to rooms
   let userObj: UserData;
   function handleUserMessageSend() {
-    socket = io("http://localhost:3001");
-    console.log("send message function triggered");
-
     if (!isSocketInitialized) {
       console.error("Socket is not Initialized yet");
       return;
     }
+    console.log("send message function triggered");
     function formatTime24Hours(date: any) {
       const hours = date.getHours().toString().padStart(2, "0");
       const minutes = date.getMinutes().toString().padStart(2, "0");
@@ -82,9 +91,6 @@ export default function Home() {
     }
     const timestamp = Date.now();
     const timeObj = new Date(timestamp);
-
-    // const options = { hour: "2-digit", minute: "2-digit" };
-    // const localTime = timeObj.toLocaleTimeString(undefined, options);
 
     const localTime = formatTime24Hours(timeObj);
     const localDate = timeObj.toLocaleDateString();
@@ -98,43 +104,59 @@ export default function Home() {
           message: userInput,
           date: localDate,
           time: localTime,
-          sender: newUser?.username,
+          sender: newUser?.username || "",
         })
       : setIsSocketInitialized(false);
     // Send the message to the selected room
     socket.emit("send-client-message", userObj);
 
-    setMessages([...messages, userObj]);
+    const userMsgObj = {
+      sender: newUser?.username || "",
+      message: userInput,
+      date: localDate,
+      time: localTime,
+    };
+
+    setRoom((prevRoom) => {
+      if (!prevRoom) {
+        return prevRoom;
+      }
+
+      return [
+        prevRoom[0],
+        {
+          ...prevRoom[1],
+          messages: [...prevRoom[1].messages, userMsgObj],
+        },
+      ];
+    });
+
     setUserInput("");
     console.log("messagessss", userObj);
   }
-  // socket?.on("receive-admin-message", (data: UserData) => {
-  //   console.log("event: receive-admin-message");
-
-  //   console.log(data);
-
-  // })
-
+  
   return (
     <main className="flex h-screen flex-col justify-end bg-slate-200">
       {/* display the messages */}
       <div className="flex flex-col items-end ms-auto me-[15px] mb-5">
-        {messages.map((message, i) => (
-          <div
-            key={i}
-            className="w-fit p-2 m-1 bg-[#F24187] flex flex-col items-end rounded-lg"
-          >
-            {/* {message.sender === newUser?.username ? "Admin: " : "You: "} */}
-            <p className="text-[#FAFAFA] text-[14px] font-normal">
-              {message.message}
-            </p>
-            <p className="text-[#FAFAFA] text-[10px] font-normal">
-              {
-                `${message.time.split(":")[0]}:${message.time.split(":")[1]}`
-              }
-            </p>
-          </div>
-        ))}
+        {room && room[1].messages.length > 0 ? (
+          room[1].messages.map((message, i) => (
+            <div
+              key={i}
+              className="w-fit p-2 m-1 bg-[#F24187] flex flex-col items-end rounded-lg"
+            >
+              {/* {message.sender === newUser?.username ? "Admin: " : "You: "} */}
+              <p className="text-[#FAFAFA] text-[14px] font-normal">
+                {message.message}
+              </p>
+              <p className="text-[#FAFAFA] text-[10px] font-normal">
+                {`${message.time.split(":")[0]}:${message.time.split(":")[1]}`}
+              </p>
+            </div>
+          ))
+        ) : (
+          <p>No messages</p>
+        )}
       </div>
       <div className="w-full flex flex-row px-5 pb-5">
         <input

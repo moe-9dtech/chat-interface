@@ -10,7 +10,7 @@ export default function Home() {
   const [isSocketInitialized, setIsSocketInitialized] =
     useState<boolean>(false);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const [messages, setMessages] = useState<UserData[]>([]);
+  // const [messages, setMessages] = useState<UserData[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]); //set rooms list -userNames-
   const [newUser, setNewUser] = useState<loggedUser>();
   const [adminInput, setAdminInput] = useState("");
@@ -116,8 +116,9 @@ export default function Home() {
     // Send the message to the selected room
     socket.emit("send-admin-message", adminObj);
     // socket.to(roomName).emit("room-list", adminObj);
+    // socket.emit("receive-admin-message", adminObj);
 
-    setMessages([...messages, adminObj]);
+    // setMessages([...messages, adminObj]);
     console.log({ rooms });
     // then save to the database
 
