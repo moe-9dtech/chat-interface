@@ -11,8 +11,8 @@ export default function Home() {
     useState<boolean>(false);
 
   var socket: any;
-  socket = io("http://localhost:3001");
   const rooms = new Map();
+  socket = io("http://localhost:3001");
   useEffect(() => {
     socket.on("connect", () => {
       const user = {
@@ -45,38 +45,44 @@ export default function Home() {
         return;
       }
     });
+    const handleReceiveAdminMessage = (data: UserData) => {
+      const { room, username, message, date, time } = data;
+      const receivedMessage = {
+        sender: username,
+        message: message,
+        date: date,
+        time: time,
+      };
+
+      // Update your state to include the received message
+      setRoom((prevRoom) => {
+        if (!prevRoom) {
+          console.log("true");
+
+          return prevRoom;
+        }
+
+        return [
+          prevRoom[0],
+          {
+            ...prevRoom[1],
+            messages: [...prevRoom[1].messages, receivedMessage],
+          },
+        ];
+      });
+      console.log("end of the event");     
+    }
+
+    socket.on("get-admin-message", handleReceiveAdminMessage);
+
+    return() => {
+      socket.off("get-admin-message");
+    }
   }, [isSocketInitialized]);
 
-  socket.on("get-admin-message", (data: UserData) => {
-    console.log(data);
     
-    console.log("event: get-admin-message");
-    const { room, username, message, date, time } = data;
-    const receivedMessage = {
-      sender: username,
-      message: message,
-      date: date,
-      time: time
-    };
-
-    // Update your state to include the received message
-    setRoom((prevRoom) => {
-      if (!prevRoom) {
-        return prevRoom;
-      }
-      return [
-        prevRoom[0],
-        {
-          ...prevRoom[1],
-          messages: [...prevRoom[1].messages, receivedMessage],
-        },
-      ];
-    });
-
-  });
 
   // function for sending messages to rooms
-  let userObj: UserData;
   function handleUserMessageSend() {
     if (!isSocketInitialized) {
       console.error("Socket is not Initialized yet");
@@ -95,18 +101,16 @@ export default function Home() {
     const localTime = formatTime24Hours(timeObj);
     const localDate = timeObj.toLocaleDateString();
 
-    newUser
-      ? (userObj = {
-          username: newUser?.username,
-          room: newUser?.username,
-          email: "abc@gmail.com",
-          dpUrl: "https://picsum.photos/200",
-          message: userInput,
-          date: localDate,
-          time: localTime,
-          sender: newUser?.username || "",
-        })
-      : setIsSocketInitialized(false);
+    const userObj = {
+      username: newUser?.username,
+      room: newUser?.username,
+      email: "abc@gmail.com",
+      dpUrl: "https://picsum.photos/200",
+      message: userInput,
+      date: localDate,
+      time: localTime,
+      sender: newUser?.username || "",
+    };
     // Send the message to the selected room
     socket.emit("send-client-message", userObj);
 
@@ -134,7 +138,7 @@ export default function Home() {
     setUserInput("");
     console.log("messagessss", userObj);
   }
-  
+
   return (
     <main className="flex h-screen flex-col justify-end bg-slate-200">
       {/* display the messages */}
