@@ -102,6 +102,8 @@ export default function Home() {
       time: localTime,
       sender: "admin",
     };
+
+
     setRooms((prevRooms) => {
       return prevRooms.map((room) => {
         if (room[0] === roomName) {
@@ -113,12 +115,8 @@ export default function Home() {
         return room;
       });
     });
-    // Send the message to the selected room
     socket.emit("send-admin-message", adminObj);
-    // socket.to(roomName).emit("room-list", adminObj);
-    // socket.emit("receive-admin-message", adminObj);
 
-    // setMessages([...messages, adminObj]);
     console.log({ rooms });
     // then save to the database
 

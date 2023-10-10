@@ -5,13 +5,7 @@ const io = new Server(httpServer);
 
 const users = {};
 const rooms = new Map();
-// .on connection
-// .on new-user
-// .emit room-list
-// .on/.emit send-admin-message
-// .on/.emit admin-chat-message
-// .on send-chat-message
-// .emin chat-message
+
 io.on("connect", (socket) => {
 
   socket.emit("room-list", Array.from(rooms.entries()));
@@ -33,7 +27,6 @@ io.on("connect", (socket) => {
           messages:[],
         });
       }
-    // socket.emit("room-list", Array.from(rooms.keys()));
         socket.join(roomName);
     }
   });
@@ -52,37 +45,12 @@ io.on("connect", (socket) => {
     })}
     // Update the room details back into the Map
     rooms.set(room, roomDetails);
-    // console.log("single room after setting it: ", roomDetails);
-    // rooms.forEach((roomData, roomName) => {
-    //   console.log(roomName, roomData);
-    // })
 
     socket.emit("room-list", Array.from(rooms.entries()));
-    socket.to(room).emit("recieve-client-message", data);
     socket.to(room).emit("get-admin-message", data);
   });
 
-  // socket.on("receive-admin-message", (data) => {
-  //   console.log("event: receive-admin-message");
-  //   const {room} = data;
-    // socket.to(room).emit("receive-client-message", data);
-    // const roomDetails = rooms.get(room);
-    // Update the messages array
-    // roomDetails.messages.push({
-    //   sender:sender,
-    //   message:message,
-    //   date: date,
-    //   time: time,
-    // });
-    // Update the room details back into the Map
-    // rooms.set(room, roomDetails);
-    // console.log("single room after setting it: ", roomDetails);
-
-    // socket.emit("room-list", Array.from(rooms.entries()));
-    // socket.to(room).emit("get-admin-message", data);
-    // console.log({data});
-  // });
-
+  
   socket.on("send-client-message", (data) => {
     console.log("event: send-client-message");
     const {room, message, date, time, sender} = data;
@@ -100,7 +68,6 @@ io.on("connect", (socket) => {
     console.log("single room after setting it: ", roomDetails);
 
     socket.emit("room-list", Array.from(rooms.entries()));
-    // console.log({data});
   });
 
   socket.on("disconnect", () => {
