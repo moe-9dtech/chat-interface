@@ -5,6 +5,7 @@ import Contact from "./components/contact";
 import { useState, useEffect } from "react";
 import { io } from "Socket.Io-client";
 import { Room, UserData, loggedUser } from "@/typings";
+import Image from "next/image";
 
 export default function Home() {
   const [isSocketInitialized, setIsSocketInitialized] =
@@ -52,13 +53,12 @@ export default function Home() {
       sender: sender,
       message: message,
       date: date,
-      time: time
+      time: time,
     };
 
     // Update your state to include the received message
     setRooms((prevRooms) => {
       return prevRooms.map((room) => {
-
         if (room[0] === userObj.room) {
           console.log("success!");
 
@@ -67,7 +67,7 @@ export default function Home() {
             {
               ...room[1],
               messages: [...room[1].messages, receivedMessage],
-            }
+            },
           ];
         }
         return room;
@@ -103,7 +103,6 @@ export default function Home() {
       sender: "admin",
     };
 
-
     setRooms((prevRooms) => {
       return prevRooms.map((room) => {
         if (room[0] === roomName) {
@@ -130,8 +129,35 @@ export default function Home() {
     );
   };
 
-  console.log({ rooms });
-  console.log(activeIndex);
+  // console.log(rooms);
+  
+
+  async function saveChat() {
+    const saveMessages = "http://172.16.150.11:5000/api/messages";
+    const payload = {
+      "roomName": rooms[activeIndex][0],
+      messages: rooms[activeIndex][1].messages,
+    };
+    console.log(payload);
+
+    await fetch(saveMessages, {
+      method: "POST",
+      body: JSON.stringify(payload),
+      headers: { 
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => {
+        console.log(response);
+        if (!response.ok) {
+          throw new Error("fetch failed");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        console.log("successfull fetch response:", data);
+      });
+  }
 
   let roomName: string;
   return (
@@ -274,67 +300,124 @@ export default function Home() {
         </div>
         {/* display whoever's isActive is true */}
         {activeIndex !== -1 ? (
-          <div id="js-messages" className="flex flex-col justify-end w-full">
-            {/* <p>Name: {roomName}</p> */}
-            {rooms[activeIndex][1].messages.map((message, i) => (
-              <div
-                key={i}
-                className={`flex flex-col items-${
-                  message.sender === "admin" ? "end" : "start"
-                } ${
-                  message.sender === "admin" ? "bg-[#F24187]" : "bg-[#F4F4F7]"
-                } rounded-lg w-fit px-2 py-1 ms-auto me-[15px] mb-2`}
-              >
-                <p
-                  className={`${
-                    message.sender === "admin"
-                      ? "text-[#FAFAFA]"
-                      : "text-[#494345]"
-                  } text-[14px] font-normal`}
-                >
-                  {message.sender === "admin"
-                    ? `You: ${message.message}`
-                    : message.message}
-                </p>
-                <p
-                  className={`${
-                    message.sender === "admin"
-                      ? "text-[#FAFAFA]"
-                      : "text-[#00000073]"
-                  } text-[12px] font-light`}
-                >
-                  {`${message.time.split(":")[0]}:${
-                    message.time.split(":")[1]
-                  }`}
+          <div className="flex flex-col w-full justify-between">
+            <div className="flex fex-row justify-between border-b border-[#EEEEEE] px-2 py-5">
+              <div className="userData flex flex-row items-center space-x-3">
+                <Image
+                  className="rounded-full"
+                  src={rooms[activeIndex][1].user.dpurl}
+                  width={42}
+                  height={42}
+                  alt="User Pic"
+                />
+                <p className="text-[#494345] font-medium">
+                  {rooms[activeIndex][1].user.username}
                 </p>
               </div>
-            ))}
-
-            <div className="px-5 pb-5 flex flex-row mt-4">
-              <input
-                className="outline-none w-full bg-[#FFF1F7] px-2 py-4 me-5 rounded"
-                type="text"
-                value={adminInput}
-                onChange={(e) => setAdminInput(e.target.value)}
-                placeholder="Type your message here.."
-              />
               <button
-                className="bg-[#F24187] outline-none p-2 rounded-[10px]"
-                onClick={handleAdminSend}
+                onClick={saveChat}
+                title="This button ends the chat and saves it to the DB"
+                className="bg-[#F24187] text-white px-2 rounded font-medium"
               >
-                <svg
-                  width="23"
-                  height="24"
-                  viewBox="0 0 23 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M21.3136 1.80843C20.983 1.47385 20.5718 1.23019 20.1195 1.10098C19.6673 0.971768 19.1894 0.961379 18.7319 1.07081L3.97971 4.178C3.13015 4.29451 2.32998 4.6459 1.66933 5.1926C1.00868 5.73929 0.513781 6.45958 0.240369 7.27234C-0.0330436 8.08511 -0.0741098 8.95806 0.121795 9.7929C0.3177 10.6277 0.742795 11.3913 1.34921 11.9976L2.93323 13.5807C3.01896 13.6664 3.08695 13.7682 3.13331 13.8802C3.17966 13.9922 3.20347 14.1123 3.20338 14.2335V17.1544C3.20541 17.5651 3.29996 17.9701 3.47998 18.3392L3.47261 18.3457L3.49658 18.3696C3.76674 18.9128 4.20799 19.3521 4.75236 19.6199L4.77634 19.6439L4.78279 19.6365C5.15193 19.8165 5.55688 19.9111 5.96758 19.9131H8.88852C9.1329 19.9129 9.36736 20.0097 9.54039 20.1823L11.1235 21.7654C11.5481 22.1947 12.0535 22.5358 12.6105 22.7689C13.1675 23.002 13.7652 23.1225 14.369 23.1236C14.8722 23.1229 15.3719 23.0407 15.8488 22.8801C16.6541 22.6157 17.3695 22.1315 17.9143 21.4821C18.4591 20.8327 18.8116 20.044 18.932 19.205L22.0438 4.42049C22.1589 3.95915 22.1522 3.47582 22.0241 3.01789C21.8961 2.55996 21.6513 2.14318 21.3136 1.80843ZM4.2388 12.2788L2.65386 10.6957C2.28479 10.3355 2.02612 9.87757 1.90821 9.37554C1.7903 8.87352 1.81803 8.34827 1.98816 7.86145C2.15311 7.36202 2.45803 6.92047 2.86666 6.58931C3.27528 6.25816 3.77043 6.05134 4.2932 5.99345L18.8988 2.91853L5.04556 16.7736V14.2335C5.04696 13.8705 4.97638 13.5109 4.8379 13.1754C4.69942 12.8399 4.4958 12.5351 4.2388 12.2788ZM17.1203 18.8897C17.0495 19.3989 16.8381 19.8784 16.51 20.2742C16.1818 20.67 15.7498 20.9665 15.2625 21.1305C14.7752 21.2944 14.2518 21.3193 13.7512 21.2023C13.2505 21.0853 12.7923 20.8311 12.4281 20.4682L10.8423 18.8823C10.5863 18.6249 10.2818 18.4208 9.94646 18.2819C9.6111 18.1429 9.25152 18.0718 8.88852 18.0728H6.34837L20.2035 4.22226L17.1203 18.8897Z"
-                    fill="#FAFAFA"
-                  />
-                </svg>
+                End Chat!
               </button>
+              <div className=" flex flex-row items-center space-x-3">
+                <button title="Pin the user to your chat">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 18 18"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M17.4589 8.06069L16.205 9.31367L15.5786 8.68718L11.8196 12.4461L11.1931 15.5794L9.93927 16.8324L6.18034 13.0726L1.79402 17.4589L0.541046 16.2059L4.92736 11.8196L1.16754 8.06069L2.42051 6.80683L5.55473 6.18034L9.31367 2.4214L8.68718 1.79491L9.94016 0.541046L17.4589 8.06069Z"
+                      fill="black"
+                      fillOpacity="0.45"
+                    />
+                  </svg>
+                </button>
+                <button
+                  title={`you are chatting with ${rooms[activeIndex][1].user.username} now`}
+                >
+                  <svg
+                    width="42"
+                    height="42"
+                    viewBox="0 0 42 42"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M21 30C16.0293 30 12 25.9707 12 21C12 16.0293 16.0293 12 21 12C25.9707 12 30 16.0293 30 21C30 25.9707 25.9707 30 21 30ZM21 28.2C22.9096 28.2 24.7409 27.4414 26.0912 26.0912C27.4414 24.7409 28.2 22.9096 28.2 21C28.2 19.0904 27.4414 17.2591 26.0912 15.9088C24.7409 14.5586 22.9096 13.8 21 13.8C19.0904 13.8 17.2591 14.5586 15.9088 15.9088C14.5586 17.2591 13.8 19.0904 13.8 21C13.8 22.9096 14.5586 24.7409 15.9088 26.0912C17.2591 27.4414 19.0904 28.2 21 28.2ZM20.1 16.5H21.9V18.3H20.1V16.5ZM20.1 20.1H21.9V25.5H20.1V20.1Z"
+                      fill="black"
+                      fillOpacity="0.45"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div id="js-messages" className="flex flex-col justify-end w-full">
+              {/* <p>Name: {roomName}</p> */}
+              {rooms[activeIndex][1].messages.map((message, i) => (
+                <div
+                  key={i}
+                  className={`flex flex-col items-${
+                    message.sender === "admin" ? "end" : "start"
+                  } ${
+                    message.sender === "admin" ? "bg-[#F24187]" : "bg-[#F4F4F7]"
+                  } rounded-lg w-fit px-2 py-1 ms-auto me-[15px] mb-2`}
+                >
+                  <p
+                    className={`${
+                      message.sender === "admin"
+                        ? "text-[#FAFAFA]"
+                        : "text-[#494345]"
+                    } text-[14px] font-normal`}
+                  >
+                    {message.sender === "admin"
+                      ? `You: ${message.message}`
+                      : message.message}
+                  </p>
+                  <p
+                    className={`${
+                      message.sender === "admin"
+                        ? "text-[#FAFAFA]"
+                        : "text-[#00000073]"
+                    } text-[12px] font-light`}
+                  >
+                    {`${message.time.split(":")[0]}:${
+                      message.time.split(":")[1]
+                    }`}
+                  </p>
+                </div>
+              ))}
+
+              <div className="px-5 pb-5 flex flex-row mt-4">
+                <input
+                  className="outline-none w-full bg-[#FFF1F7] px-2 py-4 me-5 rounded"
+                  type="text"
+                  value={adminInput}
+                  onChange={(e) => setAdminInput(e.target.value)}
+                  placeholder="Type your message here.."
+                />
+                <button
+                  className="bg-[#F24187] outline-none p-2 rounded-[10px]"
+                  onClick={handleAdminSend}
+                >
+                  <svg
+                    width="23"
+                    height="24"
+                    viewBox="0 0 23 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M21.3136 1.80843C20.983 1.47385 20.5718 1.23019 20.1195 1.10098C19.6673 0.971768 19.1894 0.961379 18.7319 1.07081L3.97971 4.178C3.13015 4.29451 2.32998 4.6459 1.66933 5.1926C1.00868 5.73929 0.513781 6.45958 0.240369 7.27234C-0.0330436 8.08511 -0.0741098 8.95806 0.121795 9.7929C0.3177 10.6277 0.742795 11.3913 1.34921 11.9976L2.93323 13.5807C3.01896 13.6664 3.08695 13.7682 3.13331 13.8802C3.17966 13.9922 3.20347 14.1123 3.20338 14.2335V17.1544C3.20541 17.5651 3.29996 17.9701 3.47998 18.3392L3.47261 18.3457L3.49658 18.3696C3.76674 18.9128 4.20799 19.3521 4.75236 19.6199L4.77634 19.6439L4.78279 19.6365C5.15193 19.8165 5.55688 19.9111 5.96758 19.9131H8.88852C9.1329 19.9129 9.36736 20.0097 9.54039 20.1823L11.1235 21.7654C11.5481 22.1947 12.0535 22.5358 12.6105 22.7689C13.1675 23.002 13.7652 23.1225 14.369 23.1236C14.8722 23.1229 15.3719 23.0407 15.8488 22.8801C16.6541 22.6157 17.3695 22.1315 17.9143 21.4821C18.4591 20.8327 18.8116 20.044 18.932 19.205L22.0438 4.42049C22.1589 3.95915 22.1522 3.47582 22.0241 3.01789C21.8961 2.55996 21.6513 2.14318 21.3136 1.80843ZM4.2388 12.2788L2.65386 10.6957C2.28479 10.3355 2.02612 9.87757 1.90821 9.37554C1.7903 8.87352 1.81803 8.34827 1.98816 7.86145C2.15311 7.36202 2.45803 6.92047 2.86666 6.58931C3.27528 6.25816 3.77043 6.05134 4.2932 5.99345L18.8988 2.91853L5.04556 16.7736V14.2335C5.04696 13.8705 4.97638 13.5109 4.8379 13.1754C4.69942 12.8399 4.4958 12.5351 4.2388 12.2788ZM17.1203 18.8897C17.0495 19.3989 16.8381 19.8784 16.51 20.2742C16.1818 20.67 15.7498 20.9665 15.2625 21.1305C14.7752 21.2944 14.2518 21.3193 13.7512 21.2023C13.2505 21.0853 12.7923 20.8311 12.4281 20.4682L10.8423 18.8823C10.5863 18.6249 10.2818 18.4208 9.94646 18.2819C9.6111 18.1429 9.25152 18.0718 8.88852 18.0728H6.34837L20.2035 4.22226L17.1203 18.8897Z"
+                      fill="#FAFAFA"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         ) : (
