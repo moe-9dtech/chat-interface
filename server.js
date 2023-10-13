@@ -70,6 +70,17 @@ io.on("connect", (socket) => {
     socket.emit("room-list", Array.from(rooms.entries()));
   });
 
+  // socket.on("delete-chat", (roomName) => {
+  //   if (rooms.has(roomName)) {
+  //     rooms.get(roomName).messages = [];
+  //     // socket.to(roomName).emit("chat-Deleted", roomName);
+  //     console.log("successfully deleted chat room");
+  //   } else {
+  //     // socket.emit("chat-deletion-faild", `Room "${roomName}" not Found`);
+  //     console.log("chat room deletion failed");
+  //   }
+  // }) 
+
   socket.on("disconnect", () => {
     const roomName = Array.from(rooms.keys()).find(
     (key) => rooms.get(key) === socket.id

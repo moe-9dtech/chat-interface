@@ -13,9 +13,11 @@ export default function Home() {
   const [activeIndex, setActiveIndex] = useState(-1);
   // const [messages, setMessages] = useState<UserData[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]); //set rooms list -userNames-
+  const [dbMessages, setDbMessages] = useState<Response>();
   const [newUser, setNewUser] = useState<loggedUser>();
   const [adminInput, setAdminInput] = useState("");
   const [socket, setSocket] = useState();
+  const localUrl = "http://172.16.150.11:5000/api/";
 
   var newSocket: any;
   newSocket = io("http://localhost:3001");
@@ -75,6 +77,42 @@ export default function Home() {
     });
   });
 
+  // Function to Get Messages From Database
+  async function getDbMessages() {
+    // const localUrl = "http://172.16.150.11:5000/api/";
+    const endPoint = "getmessages";
+    if (activeIndex === -1) {
+      return;
+    }
+    const payload = {
+      roomName: rooms[activeIndex][0],
+    };
+    console.log(payload);
+
+    await fetch(localUrl + endPoint, {
+      method: "POST",
+      body: JSON.stringify(payload),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => {
+        console.log(response);
+        if (!response.ok) {
+          throw new Error("fetch failed");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        console.log("successfull fetch response:", data);
+        setDbMessages(data);
+      });
+  }
+  useEffect(() => {
+    getDbMessages();
+    console.log(dbMessages);
+  }, [activeIndex]);
+
   // function for sending messages to rooms
   function handleAdminSend() {
     if (!isSocketInitialized) {
@@ -130,20 +168,20 @@ export default function Home() {
   };
 
   // console.log(rooms);
-  
 
   async function saveChat() {
-    const saveMessages = "http://172.16.150.11:5000/api/messages";
+    const endPoint = "messages";
     const payload = {
-      "roomName": rooms[activeIndex][0],
+      roomName: rooms[activeIndex][0],
       messages: rooms[activeIndex][1].messages,
     };
     console.log(payload);
+    // newSocket.emit("delete-chat", payload.roomName)
 
-    await fetch(saveMessages, {
+    await fetch(localUrl + endPoint, {
       method: "POST",
       body: JSON.stringify(payload),
-      headers: { 
+      headers: {
         "Content-Type": "application/json",
       },
     })
@@ -161,11 +199,11 @@ export default function Home() {
 
   let roomName: string;
   return (
-    <main className="flex h-screen flex-col justify-between">
+    <main className="flex flex-col justify-between">
       {/* main container */}
       <div className="flex flex-col md:flex-row md:justify-between">
         {/* main left column */}
-        <div className="flex flex-col border-r border-[#EEEEEE] h-screen w-full sm:w-1/2 md:w-1/3 lg:w-1/4 space-y-7">
+        <div className="flex flex-col border-r border-[#EEEEEE] w-full sm:w-1/2 md:w-1/3 lg:w-1/4 space-y-7">
           {/* top notch */}
           <div className="flex flex-row justify-between items-center p-5">
             <svg
@@ -358,6 +396,41 @@ export default function Home() {
             </div>
             <div id="js-messages" className="flex flex-col justify-end w-full">
               {/* <p>Name: {roomName}</p> */}
+              {dbMessages ? 
+              (dbMessages.messages.map((message, i) => (
+                <div
+                  key={i}
+                  className={`flex flex-col items-${
+                    message.sender === "admin" ? "end" : "start"
+                  } ${
+                    message.sender === "admin" ? "bg-[#F24187]" : "bg-[#F4F4F7]"
+                  } rounded-lg w-fit px-2 py-1 ${message.sender === "admin" ? "ms-auto" : "ms-[15px]"} me-[15px] mb-2`}
+                >
+                  <p
+                    className={`${
+                      message.sender === "admin"
+                        ? "text-[#FAFAFA]"
+                        : "text-[#494345]"
+                    } text-[14px] font-normal`}
+                  >
+                    {message.sender === "admin"
+                      ? `You: ${message.message}`
+                      : message.message}
+                  </p>
+                  <p
+                    className={`${
+                      message.sender === "admin"
+                        ? "text-[#FAFAFA]"
+                        : "text-[#00000073]"
+                    } text-[12px] font-light`}
+                  >
+                    {`${message.time.split(":")[0]}:${
+                      message.time.split(":")[1]
+                    }`}
+                  </p>
+                </div>
+              ))): "wait"}
+
               {rooms[activeIndex][1].messages.map((message, i) => (
                 <div
                   key={i}
@@ -365,7 +438,7 @@ export default function Home() {
                     message.sender === "admin" ? "end" : "start"
                   } ${
                     message.sender === "admin" ? "bg-[#F24187]" : "bg-[#F4F4F7]"
-                  } rounded-lg w-fit px-2 py-1 ms-auto me-[15px] mb-2`}
+                  } rounded-lg w-fit px-2 py-1 ${message.sender === "admin" ? "ms-auto" : "ms-[15px]"} me-[15px] mb-2`}
                 >
                   <p
                     className={`${
