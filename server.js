@@ -48,6 +48,7 @@ io.on("connect", (socket) => {
 
     socket.emit("room-list", Array.from(rooms.entries()));
     socket.to(room).emit("get-admin-message", data);
+    console.log(data);
   });
 
   

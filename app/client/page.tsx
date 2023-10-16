@@ -16,7 +16,9 @@ export default function Home() {
   const rooms = new Map();
   socket = io("http://localhost:3001");
   useEffect(() => {
-    socket.on("connect", () => {
+    socket.on("connect", (xyz:loggedUser) => {
+      console.log({xyz});
+      
       const user = {
         username: "yousaf",
         email: "testmail@gmail.com",
