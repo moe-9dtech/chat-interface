@@ -50,6 +50,8 @@ export default function Home() {
   newSocket.on("receive-client-message", (userObj: UserData) => {
     const { sender, message, date, time } = userObj;
     console.log('event "receive-client-message" fird ');
+    console.log({userObj});
+    
 
     const receivedMessage = {
       sender: sender,
@@ -115,7 +117,7 @@ export default function Home() {
       return;
     }
     const payload = {
-      roomName: dbUsers[activeIndex].username, //rooms[activeIndex][0]
+      roomName: dbUsers[activeIndex].roomName, //rooms[activeIndex][0]
     };
 
     // setRooms((prevRooms) => {
@@ -173,7 +175,7 @@ export default function Home() {
     const localDate = timeObj.toLocaleDateString();
     const adminObj = {
       username: "admin",
-      room: roomName,
+      room: dbUsers[activeIndex].roomName,
       email: "abc@gmail.com",
       dpUrl: "https://picsum.photos/200",
       message: adminInput,
@@ -184,9 +186,11 @@ export default function Home() {
 
     setRooms((prevRooms) => {
       return prevRooms.map((room) => {
-        if (room[0] === roomName) {
+        if (room[0] === dbUsers[activeIndex].roomName) {
+          
           // Check if room[1] exists and has a 'messages' property
           if (room[1] && room[1].messages) {
+            
             return {
               ...room,
               messages: [...room[1].messages, adminObj],
@@ -247,7 +251,7 @@ export default function Home() {
   }
   console.log(activeIndex);
 
-  let roomName: string;
+  // let roomName: string;
   return (
     <main className="flex flex-col justify-between">
       {/* main container */}
@@ -391,12 +395,12 @@ export default function Home() {
                   if (user[0] === "admin-room" || user[0] === "admin") {
                     return null;
                   }
-                  roomName = user.username;
+                  const roomName = user.roomName;
                   // const roomData = user[1];
 
                   // User Data
                   // const name = roomData.user.username,
-                  const dpUrl = user.dpUrl ? user.dpUrl : "";
+                  const dpUrl = user.user.dpUrl ? user.user.dpUrl : "";
 
                   // latest Message Data
 
@@ -529,7 +533,7 @@ export default function Home() {
                 : "wait"}
 
               {rooms[activeIndex] &&
-                rooms[activeIndex][1].messages.map((message, i) => {
+                rooms[activeIndex][1]?.messages.map((message, i) => {
                   // Check if the message is not in dbMessages
                   const isNotInDb = !dbMessages?.messages.some(
                     (dbMessage) => dbMessage.message === message.message
