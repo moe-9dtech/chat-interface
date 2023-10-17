@@ -14,6 +14,7 @@ export default function Home() {
   // const [messages, setMessages] = useState<UserData[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]); //set rooms list -userNames-
   const [dbMessages, setDbMessages] = useState<Response>();
+  const [dbUsers, setDbUsers] = useState<Response[{}]>();
   const [newUser, setNewUser] = useState<loggedUser>();
   const [adminInput, setAdminInput] = useState("");
   const [socket, setSocket] = useState();
@@ -42,7 +43,6 @@ export default function Home() {
     newSocket.on("room-list", (roomList: string[]) => {
       const listMap = new Map(Object.entries(roomList));
       var roomArray = Array.from(listMap.values());
-
       setRooms(roomArray);
     });
   }, []);
@@ -50,6 +50,8 @@ export default function Home() {
   newSocket.on("receive-client-message", (userObj: UserData) => {
     const { sender, message, date, time } = userObj;
     console.log('event "receive-client-message" fird ');
+    console.log({userObj});
+    
 
     const receivedMessage = {
       sender: sender,
@@ -77,6 +79,36 @@ export default function Home() {
     });
   });
 
+  // Get all users from Db to display them as individual chats
+  async function getDbUsers() {
+    const endPoint = "fetchall";
+
+    await fetch(localUrl + endPoint, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((Response) => {
+        if (!Response.ok) {
+          throw new Error("no rooms found");
+        }
+        return Response.json();
+      })
+      .then((data) => {
+        console.log({ data });
+        setDbUsers(data.users);
+      });
+  }
+
+  useEffect(() => {
+    getDbUsers();
+  }, []);
+
+  useEffect(() => {
+    console.log(dbUsers);
+  }, [dbUsers]);
+
   // Function to Get Messages From Database
   async function getDbMessages() {
     // const localUrl = "http://172.16.150.11:5000/api/";
@@ -85,9 +117,20 @@ export default function Home() {
       return;
     }
     const payload = {
-      roomName: rooms[activeIndex][0],
+      roomName: dbUsers[activeIndex].roomName, //rooms[activeIndex][0]
     };
-    console.log(payload);
+
+    // setRooms((prevRooms) => {
+    //   return prevRooms.map((room) => {
+    //     if (room[0] === roomName) {
+    //       return {
+    //         ...room,
+    //         messages: [],
+    //       };
+    //     }
+    //     return room;
+    //   });
+    // });
 
     await fetch(localUrl + endPoint, {
       method: "POST",
@@ -132,7 +175,7 @@ export default function Home() {
     const localDate = timeObj.toLocaleDateString();
     const adminObj = {
       username: "admin",
-      room: roomName,
+      room: dbUsers[activeIndex].roomName,
       email: "abc@gmail.com",
       dpUrl: "https://picsum.photos/200",
       message: adminInput,
@@ -143,11 +186,21 @@ export default function Home() {
 
     setRooms((prevRooms) => {
       return prevRooms.map((room) => {
-        if (room[0] === roomName) {
-          return {
-            ...room,
-            messages: [...room[1].messages, adminObj],
-          };
+        if (room[0] === dbUsers[activeIndex].roomName) {
+          
+          // Check if room[1] exists and has a 'messages' property
+          if (room[1] && room[1].messages) {
+            
+            return {
+              ...room,
+              messages: [...room[1].messages, adminObj],
+            };
+          } else {
+            return {
+              ...room,
+              messages: [adminObj],
+            };
+          }
         }
         return room;
       });
@@ -196,8 +249,9 @@ export default function Home() {
         console.log("successfull fetch response:", data);
       });
   }
+  console.log(activeIndex);
 
-  let roomName: string;
+  // let roomName: string;
   return (
     <main className="flex flex-col justify-between">
       {/* main container */}
@@ -294,7 +348,8 @@ export default function Home() {
           </div>
           {/* contacts */}
           <div className="flex flex-col">
-            {rooms && rooms.length !== 0
+            {/*
+              {rooms && rooms.length !== 0
               ? rooms.map((room, i) => {
                   if (room[0] === "admin-room" || room[0] === "admin") {
                     return null;
@@ -334,6 +389,48 @@ export default function Home() {
                   );
                 })
               : "No Chats"}
+             */}
+            {dbUsers && dbUsers.length !== 0
+              ? dbUsers.map((user: any, i: number) => {
+                  if (user[0] === "admin-room" || user[0] === "admin") {
+                    return null;
+                  }
+                  const roomName = user.roomName;
+                  // const roomData = user[1];
+
+                  // User Data
+                  // const name = roomData.user.username,
+                  const dpUrl = user.user.dpUrl ? user.user.dpUrl : "";
+
+                  // latest Message Data
+
+                  const latestMessage =
+                      user.messages && user.messages.length > 0
+                        ? user.messages[user.messages.length - 1]
+                        : "",
+                    lastMessage =
+                      latestMessage && latestMessage.sender === "admin"
+                        ? `You: ${latestMessage.message}`
+                        : latestMessage && latestMessage.sender !== "admin"
+                        ? `${latestMessage.message}`
+                        : `Start A conversation with ${roomName}`,
+                    // LtestMessageSender = latestMessage ? latestMessage.sender : '',
+                    latestMessageTime = latestMessage ? latestMessage.time : "";
+
+                  return (
+                    <Contact
+                      key={i}
+                      isActive={i === activeIndex}
+                      onClick={() => handleContactClick(i)}
+                      name={roomName}
+                      dpUrl={dpUrl}
+                      lastMessage={lastMessage}
+                      lastTime={latestMessageTime}
+                      unreadMessages={5}
+                    />
+                  );
+                })
+              : "No Chats"}
           </div>
         </div>
         {/* display whoever's isActive is true */}
@@ -343,13 +440,14 @@ export default function Home() {
               <div className="userData flex flex-row items-center space-x-3">
                 <Image
                   className="rounded-full"
-                  src={rooms[activeIndex][1].user.dpurl}
+                  src={dbUsers[activeIndex].dpUrl} //{rooms[activeIndex][1].user.dpurl}
                   width={42}
                   height={42}
                   alt="User Pic"
                 />
                 <p className="text-[#494345] font-medium">
-                  {rooms[activeIndex][1].user.username}
+                  {dbUsers[activeIndex].username}{" "}
+                  {/*{rooms[activeIndex][1].user.username} */}
                 </p>
               </div>
               <button
@@ -376,7 +474,7 @@ export default function Home() {
                   </svg>
                 </button>
                 <button
-                  title={`you are chatting with ${rooms[activeIndex][1].user.username} now`}
+                  title={`you are chatting with ${dbUsers[activeIndex].username} now`}
                 >
                   <svg
                     width="42"
@@ -396,74 +494,91 @@ export default function Home() {
             </div>
             <div id="js-messages" className="flex flex-col justify-end w-full">
               {/* <p>Name: {roomName}</p> */}
-              {dbMessages ? 
-              (dbMessages.messages.map((message, i) => (
-                <div
-                  key={i}
-                  className={`flex flex-col items-${
-                    message.sender === "admin" ? "end" : "start"
-                  } ${
-                    message.sender === "admin" ? "bg-[#F24187]" : "bg-[#F4F4F7]"
-                  } rounded-lg w-fit px-2 py-1 ${message.sender === "admin" ? "ms-auto" : "ms-[15px]"} me-[15px] mb-2`}
-                >
-                  <p
-                    className={`${
-                      message.sender === "admin"
-                        ? "text-[#FAFAFA]"
-                        : "text-[#494345]"
-                    } text-[14px] font-normal`}
-                  >
-                    {message.sender === "admin"
-                      ? `You: ${message.message}`
-                      : message.message}
-                  </p>
-                  <p
-                    className={`${
-                      message.sender === "admin"
-                        ? "text-[#FAFAFA]"
-                        : "text-[#00000073]"
-                    } text-[12px] font-light`}
-                  >
-                    {`${message.time.split(":")[0]}:${
-                      message.time.split(":")[1]
-                    }`}
-                  </p>
-                </div>
-              ))): "wait"}
+              {dbMessages
+                ? dbMessages.messages.map((message, i) => (
+                    <div
+                      key={i}
+                      className={`flex flex-col items-${
+                        message.sender === "admin" ? "end" : "start"
+                      } ${
+                        message.sender === "admin"
+                          ? "bg-[#F24187]"
+                          : "bg-[#F4F4F7]"
+                      } rounded-lg w-fit px-2 py-1 ${
+                        message.sender === "admin" ? "ms-auto" : "ms-[15px]"
+                      } me-[15px] mb-2`}
+                    >
+                      <p
+                        className={`${
+                          message.sender === "admin"
+                            ? "text-[#FAFAFA]"
+                            : "text-[#494345]"
+                        } text-[14px] font-normal`}
+                      >
+                        {message.message}
+                      </p>
+                      <p
+                        className={`${
+                          message.sender === "admin"
+                            ? "text-[#FAFAFA]"
+                            : "text-[#00000073]"
+                        } text-[12px] font-light`}
+                      >
+                        {`${message.time.split(":")[0]}:${
+                          message.time.split(":")[1]
+                        }`}
+                      </p>
+                    </div>
+                  ))
+                : "wait"}
 
-              {rooms[activeIndex][1].messages.map((message, i) => (
-                <div
-                  key={i}
-                  className={`flex flex-col items-${
-                    message.sender === "admin" ? "end" : "start"
-                  } ${
-                    message.sender === "admin" ? "bg-[#F24187]" : "bg-[#F4F4F7]"
-                  } rounded-lg w-fit px-2 py-1 ${message.sender === "admin" ? "ms-auto" : "ms-[15px]"} me-[15px] mb-2`}
-                >
-                  <p
-                    className={`${
-                      message.sender === "admin"
-                        ? "text-[#FAFAFA]"
-                        : "text-[#494345]"
-                    } text-[14px] font-normal`}
-                  >
-                    {message.sender === "admin"
-                      ? `You: ${message.message}`
-                      : message.message}
-                  </p>
-                  <p
-                    className={`${
-                      message.sender === "admin"
-                        ? "text-[#FAFAFA]"
-                        : "text-[#00000073]"
-                    } text-[12px] font-light`}
-                  >
-                    {`${message.time.split(":")[0]}:${
-                      message.time.split(":")[1]
-                    }`}
-                  </p>
-                </div>
-              ))}
+              {rooms[activeIndex] &&
+                rooms[activeIndex][1]?.messages.map((message, i) => {
+                  // Check if the message is not in dbMessages
+                  const isNotInDb = !dbMessages?.messages.some(
+                    (dbMessage) => dbMessage.message === message.message
+                  );
+
+                  if (isNotInDb) {
+                    return (
+                      <div
+                        key={i}
+                        className={`flex flex-col items-${
+                          message.sender === "admin" ? "end" : "start"
+                        } ${
+                          message.sender === "admin"
+                            ? "bg-[#F24187]"
+                            : "bg-[#F4F4F7]"
+                        } rounded-lg w-fit px-2 py-1 ${
+                          message.sender === "admin" ? "ms-auto" : "ms-[15px]"
+                        } me-[15px] mb-2`}
+                      >
+                        <p
+                          className={`${
+                            message.sender === "admin"
+                              ? "text-[#FAFAFA]"
+                              : "text-[#494345]"
+                          } text-[14px] font-normal`}
+                        >
+                          {message.message}
+                        </p>
+                        <p
+                          className={`${
+                            message.sender === "admin"
+                              ? "text-[#FAFAFA]"
+                              : "text-[#00000073]"
+                          } text-[12px] font-light`}
+                        >
+                          {`${message.time.split(":")[0]}:${
+                            message.time.split(":")[1]
+                          }`}
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  return null;
+                })}
 
               <div className="px-5 pb-5 flex flex-row mt-4">
                 <input
