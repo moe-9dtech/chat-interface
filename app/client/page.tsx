@@ -16,12 +16,12 @@ export default function Home() {
   const rooms = new Map();
   socket = io("http://localhost:3001");
   useEffect(() => {
-    socket.on("connect", (xyz:loggedUser) => {
-      console.log({xyz});
-      
+    socket.on("connect", (xyz: loggedUser) => {
+      console.log({ xyz });
+
       const user = {
-        username: "yousaf",
-        email: "testmail@gmail.com",
+        username: "fahad",
+        email: "fahad@gmail.com",
         dpurl: "https://picsum.photos/200",
         admin: false,
       };
@@ -66,13 +66,15 @@ export default function Home() {
           return prevRoom;
         }
 
-        return [
-          prevRoom[0],
-          {
-            ...prevRoom[1],
-            messages: [...prevRoom[1].messages, receivedMessage],
-          },
-        ];
+        if (prevRoom[1]) {
+          return [
+            prevRoom[0],
+            {
+              ...prevRoom[1],
+              messages: [...prevRoom[1].messages, receivedMessage],
+            },
+          ];
+        }
       });
       console.log("end of the event");
     };
@@ -128,17 +130,28 @@ export default function Home() {
         return prevRoom;
       }
 
-      return [
-        prevRoom[0],
-        {
-          ...prevRoom[1],
-          messages: [...prevRoom[1].messages, userMsgObj],
-        },
-      ];
+      if (prevRoom[1]) {
+        return [
+          prevRoom[0],
+          {
+            ...prevRoom[1],
+            messages: [...prevRoom[1].messages, userMsgObj],
+          },
+        ];
+      } else {
+        return [
+          prevRoom[0],
+          {
+            user:newUser,
+            messages:[userMsgObj]
+          }
+        ]
+      }
     });
 
     setUserInput("");
     console.log("messagessss", userObj);
+    console.log({room});
   }
 
   async function getDbMessages() {
@@ -146,12 +159,12 @@ export default function Home() {
     const endPoint = "getmessages";
 
     const payload = {
-      roomName: newUser?.username
+      roomName: newUser?.username,
     };
-    console.log({payload});
+    console.log({ payload });
 
     if (!newUser) {
-      return
+      return;
     }
     await fetch(localUrl + endPoint, {
       method: "POST",
@@ -173,58 +186,70 @@ export default function Home() {
       });
   }
   useEffect(() => {
-    getDbMessages()
-  }, [newUser])
+    getDbMessages();
+  }, [newUser]);
 
   return (
     <main className="flex-1 flex-col justify-end bg-slate-200">
       {/* display the messages */}
       <div className="flex flex-col ms-auto me-[15px] mb-5 overflow-y-auto">
-        {dbMessages? 
-        (dbMessages.messages.map((message, i) => (
+        {dbMessages && dbMessages.messages ? (
+          dbMessages.messages.map((message, i) => (
             <div
               key={i}
               className={`flex flex-col items-${
-                    message.sender !== "admin" ? "end" : "start"
-                  } ${
-                    message.sender !== "admin" ? "bg-[#F24187]" : "bg-[#F4F4F7]"
-                  } rounded-lg w-fit px-2 py-1 ${message.sender !== "admin" ? "ms-auto" : "ms-[15px]"} me-[15px] mb-2`}
+                message.sender !== "admin" ? "end" : "start"
+              } ${
+                message.sender !== "admin" ? "bg-[#F24187]" : "bg-[#F4F4F7]"
+              } rounded-lg w-fit px-2 py-1 ${
+                message.sender !== "admin" ? "ms-auto" : "ms-[15px]"
+              } me-[15px] mb-2`}
             >
               {/* {message.sender === newUser?.username ? "Admin: " : "You: "} */}
-              <p className={`${
-                      message.sender !== "admin"
-                        ? "text-[#FAFAFA]"
-                        : "text-[#494345]"
-                    } text-[14px] font-normal`}>
+              <p
+                className={`${
+                  message.sender !== "admin"
+                    ? "text-[#FAFAFA]"
+                    : "text-[#494345]"
+                } text-[14px] font-normal`}
+              >
                 {message.message}
               </p>
-              <p className={`${
-                      message.sender !== "admin"
-                        ? "text-[#FAFAFA]"
-                        : "text-[#494345]"
-                    } text-[10px] font-normal`}>
+              <p
+                className={`${
+                  message.sender !== "admin"
+                    ? "text-[#FAFAFA]"
+                    : "text-[#494345]"
+                } text-[10px] font-normal`}
+              >
                 {`${message.time.split(":")[0]}:${message.time.split(":")[1]}`}
               </p>
             </div>
-          ))) : <p>Loading Messages</p>
-         }
+          ))
+        ) : (
+          <p>No messages yet</p>
+        )}
 
-        {room && room[1].messages.length > 0 ? (
+        {room && room[1] && room[1].messages.length > 0 ? (
           room[1].messages.map((message, i) => (
             <div
               key={i}
               className={`flex flex-col items-${
-                    message.sender !== "admin" ? "end" : "start"
-                  } ${
-                    message.sender !== "admin" ? "bg-[#F24187]" : "bg-[#F4F4F7]"
-                  } rounded-lg w-fit px-2 py-1 ${message.sender !== "admin" ? "ms-auto" : "ms-[15px]"} me-[15px] mb-2`}
+                message.sender !== "admin" ? "end" : "start"
+              } ${
+                message.sender !== "admin" ? "bg-[#F24187]" : "bg-[#F4F4F7]"
+              } rounded-lg w-fit px-2 py-1 ${
+                message.sender !== "admin" ? "ms-auto" : "ms-[15px]"
+              } me-[15px] mb-2`}
             >
               {/* {message.sender === newUser?.username ? "Admin: " : "You: "} */}
-              <p className={`${
-                      message.sender !== "admin"
-                        ? "text-[#FAFAFA]"
-                        : "text-[#494345]"
-                    } text-[14px] font-normal`}>
+              <p
+                className={`${
+                  message.sender !== "admin"
+                    ? "text-[#FAFAFA]"
+                    : "text-[#494345]"
+                } text-[14px] font-normal`}
+              >
                 {message.message}
               </p>
               <p className="text-[#FAFAFA] text-[10px] font-normal">
