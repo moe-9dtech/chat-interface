@@ -4,8 +4,9 @@ import SortDropdown from "./components/sortDropdown";
 import Contact from "./components/contact";
 import { useState, useEffect } from "react";
 import { io } from "Socket.Io-client";
-import { Room, UserData, loggedUser } from "@/typings";
+import { Message, Room, UserData, loggedUser } from "@/typings";
 import Image from "next/image";
+import { addSyntheticTrailingComment } from "typescript";
 
 export default function Home() {
   const [isSocketInitialized, setIsSocketInitialized] =
@@ -43,7 +44,10 @@ export default function Home() {
     newSocket.on("room-list", (roomList: string[]) => {
       const listMap = new Map(Object.entries(roomList));
       var roomArray = Array.from(listMap.values());
-      setRooms(roomArray);
+      let filteredroom = roomArray.filter((room) => room[0] !== "admin-room")
+      console.log({filteredroom});
+      
+      // setRooms(filteredroom);
     });
   }, []);
 
@@ -97,6 +101,7 @@ export default function Home() {
       })
       .then((data) => {
         console.log({ data });
+        setRooms(data.users);
         setDbUsers(data.users);
       });
   }
@@ -106,7 +111,8 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    console.log(dbUsers);
+    console.log({dbUsers});
+    console.log({rooms});
   }, [dbUsers]);
 
   // Function to Get Messages From Database
@@ -175,7 +181,7 @@ export default function Home() {
     const localDate = timeObj.toLocaleDateString();
     const adminObj = {
       username: "admin",
-      room: dbUsers[activeIndex].roomName,
+      room: dbUsers[activeIndex].roomName || rooms[activeIndex][0],
       email: "abc@gmail.com",
       dpUrl: "https://picsum.photos/200",
       message: adminInput,
@@ -183,11 +189,12 @@ export default function Home() {
       time: localTime,
       sender: "admin",
     };
+    console.log(adminObj.room);
+    
 
     setRooms((prevRooms) => {
       return prevRooms.map((room) => {
         if (room[0] === dbUsers[activeIndex].roomName) {
-          
           // Check if room[1] exists and has a 'messages' property
           if (room[1] && room[1].messages) {
             
@@ -208,6 +215,8 @@ export default function Home() {
     socket.emit("send-admin-message", adminObj);
 
     console.log({ rooms });
+    console.log(dbMessages);
+    
     // then save to the database
 
     // clear input field
@@ -249,7 +258,15 @@ export default function Home() {
         console.log("successfull fetch response:", data);
       });
   }
-  console.log(activeIndex);
+  console.log(rooms);
+  
+  if (rooms[activeIndex]) {
+    console.log("curernt room is: ", rooms[activeIndex].roomName);
+    // console.log({activeIndex});
+    
+  } else {
+    console.log("incorrect");
+  }
 
   // let roomName: string;
   return (
@@ -391,10 +408,13 @@ export default function Home() {
               : "No Chats"}
              */}
             {dbUsers && dbUsers.length !== 0
-              ? dbUsers.map((user: any, i: number) => {
-                  if (user[0] === "admin-room" || user[0] === "admin") {
-                    return null;
-                  }
+              ? 
+              dbUsers.map((user: any, i: number) => {
+              // .filter((user: any) => user[0] !== "admin-room")
+                  // if (user[0] === "admin-room" || user[0] === "admin") {
+                  //   return null;
+                  // }
+                  
                   const roomName = user.roomName;
                   // const roomData = user[1];
 
@@ -440,13 +460,13 @@ export default function Home() {
               <div className="userData flex flex-row items-center space-x-3">
                 <Image
                   className="rounded-full"
-                  src={dbUsers[activeIndex].dpUrl} //{rooms[activeIndex][1].user.dpurl}
+                  src={dbUsers[activeIndex].user.dpUrl} //{rooms[activeIndex][1].user.dpurl}
                   width={42}
                   height={42}
                   alt="User Pic"
                 />
                 <p className="text-[#494345] font-medium">
-                  {dbUsers[activeIndex].username}{" "}
+                  {dbUsers[activeIndex].user.username}{" "}
                   {/*{rooms[activeIndex][1].user.username} */}
                 </p>
               </div>
@@ -474,7 +494,7 @@ export default function Home() {
                   </svg>
                 </button>
                 <button
-                  title={`you are chatting with ${dbUsers[activeIndex].username} now`}
+                  title={`you are chatting with ${dbUsers[activeIndex].user.username} now`}
                 >
                   <svg
                     width="42"
@@ -494,8 +514,8 @@ export default function Home() {
             </div>
             <div id="js-messages" className="flex flex-col justify-end w-full">
               {/* <p>Name: {roomName}</p> */}
-              {dbMessages
-                ? dbMessages.messages.map((message, i) => (
+              {dbMessages && dbMessages.messages
+                ? dbMessages.messages.map((message: Message, i: number) => (
                     <div
                       key={i}
                       className={`flex flex-col items-${
@@ -535,11 +555,15 @@ export default function Home() {
               {rooms[activeIndex] &&
                 rooms[activeIndex][1]?.messages.map((message, i) => {
                   // Check if the message is not in dbMessages
-                  const isNotInDb = !dbMessages?.messages.some(
-                    (dbMessage) => dbMessage.message === message.message
-                  );
+                  // const isNotInDb = !dbMessages?.messages.some(
+                  //   (dbMessage:any) => dbMessage.message === message.message
+                  // );
+                  // console.log({isNotInDb});
+                  console.log({message});
+                  
+                  
 
-                  if (isNotInDb) {
+                  // if (isNotInDb) {
                     return (
                       <div
                         key={i}
@@ -575,9 +599,9 @@ export default function Home() {
                         </p>
                       </div>
                     );
-                  }
+                  // }
 
-                  return null;
+                  // return null;
                 })}
 
               <div className="px-5 pb-5 flex flex-row mt-4">
