@@ -45,9 +45,7 @@ export default function Home() {
       const listMap = new Map(Object.entries(roomList));
       var roomArray = Array.from(listMap.values());
       let filteredroom = roomArray.filter((room) => room[0] !== "admin-room")
-      console.log({filteredroom});
-      
-      // setRooms(filteredroom);
+      setRooms(filteredroom);
     });
   }, []);
 
@@ -101,7 +99,7 @@ export default function Home() {
       })
       .then((data) => {
         console.log({ data });
-        setRooms(data.users);
+        // setRooms(data.users);
         setDbUsers(data.users);
       });
   }
@@ -261,7 +259,7 @@ export default function Home() {
   console.log(rooms);
   
   if (rooms[activeIndex]) {
-    console.log("curernt room is: ", rooms[activeIndex].roomName);
+    console.log("current room is: ", dbUsers[activeIndex].roomName);
     // console.log({activeIndex});
     
   } else {
@@ -552,18 +550,22 @@ export default function Home() {
                   ))
                 : "wait"}
 
-              {rooms[activeIndex] &&
-                rooms[activeIndex][1]?.messages.map((message, i) => {
+              {dbUsers[activeIndex] && rooms.find((room) => room[0] === dbUsers[activeIndex].roomName)?.[1]?.messages.map((message, i) => {
                   // Check if the message is not in dbMessages
                   // const isNotInDb = !dbMessages?.messages.some(
                   //   (dbMessage:any) => dbMessage.message === message.message
                   // );
                   // console.log({isNotInDb});
-                  console.log({message});
+                  // const chatRoom = dbUsers[activeIndex].roomName;
+                  // let activeUser = dbUsers.find((user: any) => user.roomName = rooms[activeIndex][0]);
+                  // console.log({activeUser});
                   
+                  console.log("mapping", message.message, activeIndex);
                   
-
-                  // if (isNotInDb) {
+                  console.log(message);
+                  
+// isNotInDb
+                  // if (activeUser) {
                     return (
                       <div
                         key={i}
