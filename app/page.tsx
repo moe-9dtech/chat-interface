@@ -552,20 +552,11 @@ export default function Home() {
 
               {dbUsers[activeIndex] && rooms.find((room) => room[0] === dbUsers[activeIndex].roomName)?.[1]?.messages.map((message, i) => {
                   // Check if the message is not in dbMessages
-                  // const isNotInDb = !dbMessages?.messages.some(
-                  //   (dbMessage:any) => dbMessage.message === message.message
-                  // );
-                  // console.log({isNotInDb});
-                  // const chatRoom = dbUsers[activeIndex].roomName;
-                  // let activeUser = dbUsers.find((user: any) => user.roomName = rooms[activeIndex][0]);
-                  // console.log({activeUser});
+                  const isNotInDb = dbMessages && dbMessages.messages ? !dbMessages?.messages.some(
+                    (dbMessage:any) => dbMessage.message === message.message 
+                  ): true;
                   
-                  console.log("mapping", message.message, activeIndex);
-                  
-                  console.log(message);
-                  
-// isNotInDb
-                  // if (activeUser) {
+                  if (isNotInDb) {
                     return (
                       <div
                         key={i}
@@ -601,9 +592,8 @@ export default function Home() {
                         </p>
                       </div>
                     );
-                  // }
-
-                  // return null;
+                  }
+                  return null;
                 })}
 
               <div className="px-5 pb-5 flex flex-row mt-4">
