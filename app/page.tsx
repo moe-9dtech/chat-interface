@@ -20,6 +20,7 @@ export default function Home() {
   const [adminInput, setAdminInput] = useState("");
   const [socket, setSocket] = useState();
   const localUrl = "http://172.16.150.11:5000/api/";
+  let dd = [];
 
   var newSocket: any;
   newSocket = io("http://localhost:3001");
@@ -44,8 +45,11 @@ export default function Home() {
     newSocket.on("room-list", (roomList: string[]) => {
       const listMap = new Map(Object.entries(roomList));
       var roomArray = Array.from(listMap.values());
-      let filteredroom = roomArray.filter((room) => room[0] !== "admin-room")
-      setRooms(filteredroom);
+      let filteredRoom = roomArray.filter((room) => room[0] !== "admin-room")
+      // this is the issue I have to tackle tomorrow morning
+      setRooms((prevRooms) => {
+        return [...prevRooms, ...filteredRoom]
+      });
     });
   }, []);
 
@@ -123,19 +127,6 @@ export default function Home() {
     const payload = {
       roomName: dbUsers[activeIndex].roomName, //rooms[activeIndex][0]
     };
-
-    // setRooms((prevRooms) => {
-    //   return prevRooms.map((room) => {
-    //     if (room[0] === roomName) {
-    //       return {
-    //         ...room,
-    //         messages: [],
-    //       };
-    //     }
-    //     return room;
-    //   });
-    // });
-
     await fetch(localUrl + endPoint, {
       method: "POST",
       body: JSON.stringify(payload),
@@ -165,16 +156,17 @@ export default function Home() {
     if (!isSocketInitialized) {
       console.log("Socket is not Initialized yet");
       return;
-    }
+    };
+
     function formatTime24Hours(date: any) {
       const hours = date.getHours().toString().padStart(2, "0");
       const minutes = date.getMinutes().toString().padStart(2, "0");
       const seconds = date.getSeconds().toString().padStart(2, "0");
       return `${hours}:${minutes}:${seconds}`;
     }
+
     const timestamp = Date.now();
     const timeObj = new Date(timestamp);
-
     const localTime = formatTime24Hours(timeObj);
     const localDate = timeObj.toLocaleDateString();
     const adminObj = {
@@ -186,16 +178,20 @@ export default function Home() {
       date: localDate,
       time: localTime,
       sender: "admin",
-    };
-    console.log(adminObj.room);
+    }
+
+    const myUser = dbUsers.find((user) => user.user.username === adminObj.room)?.user;
+    dd = [adminObj.room, {user: myUser, messages: [{sender: "admin", message: adminObj.message, time: adminObj.time, date: adminObj.date}]}]
+    console.log({dd});
     
 
-    setRooms((prevRooms) => {
+  setRooms((prevRooms) => {
+    const currentIndex = activeIndex;
+    const roomExists = prevRooms.some((room) => room[0] === adminObj.room);
+    if (roomExists) {
       return prevRooms.map((room) => {
-        if (room[0] === dbUsers[activeIndex].roomName) {
-          // Check if room[1] exists and has a 'messages' property
+        if (room[0] === dbUsers[currentIndex].roomName) {
           if (room[1] && room[1].messages) {
-            
             return {
               ...room,
               messages: [...room[1].messages, adminObj],
@@ -209,18 +205,22 @@ export default function Home() {
         }
         return room;
       });
-    });
+    } else {
+      const dbUser = dbUsers.find((user) => user.user.username === adminObj.room)?.user;
+      if (dbUser) {
+        return [...prevRooms, dd];
+      } else {
+        console.log("check the code again");
+      }
+    }
+  });
     socket.emit("send-admin-message", adminObj);
 
-    console.log({ rooms });
     console.log(dbMessages);
-    
-    // then save to the database
-
-    // clear input field
     setAdminInput("");
   }
-
+  
+  console.log({ rooms });
   const handleContactClick = (index: number) => {
     setActiveIndex((prevActiveIndex) =>
       prevActiveIndex === index ? -1 : index
@@ -232,8 +232,8 @@ export default function Home() {
   async function saveChat() {
     const endPoint = "messages";
     const payload = {
-      roomName: rooms[activeIndex][0],
-      messages: rooms[activeIndex][1].messages,
+      roomName: rooms.find((room) => room[0] === dbUsers[activeIndex].roomName)?.[0],
+      messages: rooms.find((room) => room[0] === dbUsers[activeIndex].roomName)?.[1]?.messages,
     };
     console.log(payload);
     // newSocket.emit("delete-chat", payload.roomName)
