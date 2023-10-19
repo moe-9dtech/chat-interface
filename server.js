@@ -30,22 +30,31 @@ io.on("connect", (socket) => {
         socket.join(roomName);
     }
   });
-
+  // dd = [adminObj.room, {user: myUser, messages: [{sender: "admin", message: adminObj.message, time: adminObj.time, date: adminObj.date}]}]
   socket.on("send-admin-message", (data) => {
     console.log("event: send-admin-message");
     const {room, message, date, time, sender} = data;
-    const roomDetails = rooms.get(room);
-    // Update the messages array
-    if (roomDetails){
-    roomDetails.messages.push({
-      sender:sender,
-      message:message,
-      date: date,
-      time: time,
-    })}
+    if (rooms.get(room)) {
+      const roomDetails = rooms.get(room);
+      // Update the messages array
+      if (roomDetails){
+      roomDetails.messages.push({
+        sender:sender,
+        message:message,
+        date: date,
+        time: time,
+      });
+    } 
+      rooms.set(room, roomDetails);
+    } else {
+      rooms.set(data[0], {
+        admin: "admin",
+        user: data[1].user,
+        messages: data[1].messages
+      });
+    }
+    
     // Update the room details back into the Map
-    rooms.set(room, roomDetails);
-
     socket.emit("room-list", Array.from(rooms.entries()));
     socket.to(room).emit("get-admin-message", data);
     console.log(data);
