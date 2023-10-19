@@ -23,7 +23,10 @@ export default function Home() {
   let dd = [];
 
   var newSocket: any;
-  newSocket = io("http://localhost:3001");
+  newSocket = io("http://localhost:3001", {
+    reconnection: true,
+    reconnectionAttempts: 3
+  });
   useEffect(() => {
     // Establish the socket connection
 
@@ -47,9 +50,7 @@ export default function Home() {
       var roomArray = Array.from(listMap.values());
       let filteredRoom = roomArray.filter((room) => room[0] !== "admin-room")
       // this is the issue I have to tackle tomorrow morning
-      setRooms((prevRooms) => {
-        return [...prevRooms, ...filteredRoom]
-      });
+      setRooms(filteredRoom);
     });
   }, []);
 
@@ -214,7 +215,12 @@ export default function Home() {
       }
     }
   });
+
+  if (rooms.find((room) => room[0] === adminObj.room)) {
     socket.emit("send-admin-message", adminObj);
+  } else {
+    socket.emit("send-admin-message", dd);
+  }
 
     console.log(dbMessages);
     setAdminInput("");
