@@ -2,16 +2,6 @@
 import Image from "next/image";
 import React, { useState } from "react";
 
-type Props = {
-  isActive: boolean;
-  onClick: () => void;
-  name: string;
-  dpUrl: string;
-  lastMessage: string;
-  lastTime: string;
-  unreadMessages: number;
-};
-
 export default function Contact({
   isActive,
   onClick,
@@ -20,7 +10,7 @@ export default function Contact({
   lastMessage,
   lastTime,
   unreadMessages,
-}: Props) {
+}) {
   return (
     <div
       className={`flex flex-row justify-between hover:bg-[#FEEAF2] p-5 hover:cursor-pointer transition-all duration-[320] ease-in-out ${

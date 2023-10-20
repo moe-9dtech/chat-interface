@@ -1,10 +1,8 @@
 "use client";
 import React, { useState } from "react";
-import { text } from "stream/consumers";
 
-type Props = {};
 
-export default function SortDropdown({}: Props) {
+export default function SortDropdown({}) {
   const [isActive, setIsActive] = useState(false);
   const [currentOpt, setCurrentOpt] = useState("Newst");
 
@@ -49,7 +47,7 @@ export default function SortDropdown({}: Props) {
               role="menuitem"
               id="menu-item-0"
               onClick={(e) => {
-                const target = e.target as HTMLElement;
+                const target = e.target;
                 const textContent = target.textContent;
                 setCurrentOpt(textContent !== null ? textContent : "");
                 setIsActive(!isActive);
@@ -77,7 +75,7 @@ export default function SortDropdown({}: Props) {
               role="menuitem"
               id="menu-item-0"
               onClick={(e) => {
-                const target = e.target as HTMLElement;
+                const target = e.target;
                 const textContent = target.textContent;
                 setCurrentOpt(textContent !== null ? textContent : "");
                 setIsActive(!isActive);
@@ -104,7 +102,7 @@ export default function SortDropdown({}: Props) {
               role="menuitem"
               id="menu-item-1"
               onClick={(e) => {
-                const target = e.target as HTMLElement;
+                const target = e.target;
                 const textContet = target.textContent;
                 setCurrentOpt(textContet !== null ? textContet : "");
                 setIsActive(!isActive);
