@@ -1,22 +1,20 @@
 "use client";
-import { loggedUser, Room, UserData } from "@/typings";
 import { useState, useEffect } from "react";
-import { io } from "Socket.Io-client";
+import { io } from "socket.io-client";
 
 export default function Home() {
   const [userInput, setUserInput] = useState("");
-  const [newUser, setNewUser] = useState<loggedUser>();
-  const [room, setRoom] = useState<Room>();
-  const [dbMessages, setDbMessages] = useState<Response>();
-  const [isSocketInitialized, setIsSocketInitialized] =
-    useState<boolean>(false);
+  const [newUser, setNewUser] = useState();
+  const [room, setRoom] = useState();
+  const [dbMessages, setDbMessages] = useState(null);
+  const [isSocketInitialized, setIsSocketInitialized] = useState(false);
   const localUrl = "http://172.16.150.11:5000/api/";
 
-  var socket: any;
+  var socket;
   const rooms = new Map();
   socket = io("http://localhost:3001");
   useEffect(() => {
-    socket.on("connect", (xyz: loggedUser) => {
+    socket.on("connect", (xyz) => {
       console.log({ xyz });
 
       const user = {
@@ -35,7 +33,7 @@ export default function Home() {
       setIsSocketInitialized(true);
     });
 
-    socket.on("room-list", (roomList: string[]) => {
+    socket.on("room-list", (roomList) => {
       console.log({ newUser });
 
       if (newUser) {
@@ -49,7 +47,7 @@ export default function Home() {
         return;
       }
     });
-    const handleReceiveAdminMessage = (data: UserData) => {
+    const handleReceiveAdminMessage = (data) => {
       const { room, username, message, date, time } = data;
       const receivedMessage = {
         sender: username,
@@ -93,7 +91,7 @@ export default function Home() {
       return;
     }
     console.log("send message function triggered");
-    function formatTime24Hours(date: any) {
+    function formatTime24Hours(date) {
       const hours = date.getHours().toString().padStart(2, "0");
       const minutes = date.getMinutes().toString().padStart(2, "0");
       const seconds = date.getSeconds().toString().padStart(2, "0");
@@ -155,36 +153,34 @@ export default function Home() {
   }
 
   async function getDbMessages() {
-    // const localUrl = "http://172.16.150.11:5000/api/";
-    const endPoint = "getmessages";
+  const endPoint = "getmessages";
+  const payload = {
+    roomName: newUser?.username,
+  };
 
-    const payload = {
-      roomName: newUser?.username,
-    };
-    console.log({ payload });
+  if (!newUser) {
+    return;
+  }
 
-    if (!newUser) {
-      return;
-    }
-    await fetch(localUrl + endPoint, {
+  try {
+    const response = await fetch(localUrl + endPoint, {
       method: "POST",
       body: JSON.stringify(payload),
       headers: {
         "Content-Type": "application/json",
       },
-    })
-      .then((response) => {
-        console.log(response);
-        if (!response.ok) {
-          throw new Error("fetch failed");
-        }
-        return response.json();
-      })
-      .then((data) => {
-        console.log("successfull fetch response:", data);
-        setDbMessages(data);
-      });
+    });
+
+    if (!response.ok) {
+      throw new Error("Fetch failed");
+    }
+
+    const data = await response.json();
+    setDbMessages(data);
+  } catch (error) {
+    console.error("Error fetching messages:", error);
   }
+}
   useEffect(() => {
     getDbMessages();
   }, [newUser]);
