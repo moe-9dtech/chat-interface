@@ -8,18 +8,23 @@ export default function Home() {
   const [room, setRoom] = useState();
   const [dbMessages, setDbMessages] = useState(null);
   const [isSocketInitialized, setIsSocketInitialized] = useState(false);
-  const localUrl = "http://172.16.150.11:5000/api/";
+  const localUrl = "http://localhost:5000/api/";
+  const localSocket = 'http://localhost:3001';
+  const liveSocket = 'https://chat-inter-3txh.vercel.app';
 
   var socket;
   const rooms = new Map();
-  socket = io("http://localhost:3001");
+  socket = io(localSocket, {
+    reconnection: true,
+    reconnectionAttempts: 5
+  });
   useEffect(() => {
     socket.on("connect", (xyz) => {
       console.log({ xyz });
 
       const user = {
-        username: "junaid",
-        email: "junaid@gmail.com",
+        username: "saad",
+        email: "saad@gmail.com",
         dpurl: "https://picsum.photos/200",
         admin: false,
       };

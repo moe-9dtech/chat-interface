@@ -10,6 +10,7 @@ import Image from "next/image";
 export default function Home() {
   const [isSocketInitialized, setIsSocketInitialized] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  
   // const [messages, setMessages] = useState<UserData[]>([]);
   const [rooms, setRooms] = useState([]); //set rooms list -userNames-
   const [dbMessages, setDbMessages] = useState();
@@ -17,13 +18,15 @@ export default function Home() {
   const [newUser, setNewUser] = useState();
   const [adminInput, setAdminInput] = useState("");
   const [socket, setSocket] = useState();
-  const localUrl = "http://172.16.150.11:5000/api/";
+  const localUrl = "http://localhost:5000/api/";
+  const localSocket = "http://localhost:3001";
+  const liveSocket = "https://chat-inter-3txh.vercel.app";
   let dd = [];
 
   var newSocket;
-  newSocket = io("http://localhost:3001", {
+  newSocket = io(localSocket, {
     reconnection: true,
-    reconnectionAttempts: 3
+    reconnectionAttempts: 5,
   });
   useEffect(() => {
     // Establish the socket connection
@@ -46,7 +49,7 @@ export default function Home() {
     newSocket.on("room-list", (roomList) => {
       const listMap = new Map(Object.entries(roomList));
       var roomArray = Array.from(listMap.values());
-      let filteredRoom = roomArray.filter((room) => room[0] !== "admin-room")
+      let filteredRoom = roomArray.filter((room) => room[0] !== "admin-room");
       // this is the issue I have to tackle tomorrow morning
       setRooms(filteredRoom);
     });
@@ -55,8 +58,7 @@ export default function Home() {
   newSocket.on("receive-client-message", (userObj) => {
     const { sender, message, date, time } = userObj;
     console.log('event "receive-client-message" fird ');
-    console.log({userObj});
-    
+    console.log({ userObj });
 
     const receivedMessage = {
       sender: sender,
@@ -112,8 +114,8 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    console.log({dbUsers});
-    console.log({rooms});
+    console.log({ dbUsers });
+    console.log({ rooms });
   }, [dbUsers]);
 
   // Function to Get Messages From Database
@@ -149,7 +151,7 @@ export default function Home() {
   }
   useEffect(() => {
     getDbMessages();
-    console.log({dbMessages});
+    console.log({ dbMessages });
   }, [activeIndex]);
 
   // function for sending messages to rooms
@@ -157,7 +159,7 @@ export default function Home() {
     if (!isSocketInitialized) {
       console.log("Socket is not Initialized yet");
       return;
-    };
+    }
 
     function formatTime24Hours(date) {
       const hours = date.getHours().toString().padStart(2, "0");
@@ -179,54 +181,71 @@ export default function Home() {
       date: localDate,
       time: localTime,
       sender: "admin",
-    }
+    };
 
-    const myUser = dbUsers.find((user) => user.user.username === adminObj.room)?.user;
-    dd = [adminObj.room, {user: myUser, messages: [{sender: "admin", message: adminObj.message, time: adminObj.time, date: adminObj.date}]}]
-    console.log({dd});
-    
+    const myUser = dbUsers.find(
+      (user) => user.user.username === adminObj.room
+    )?.user;
+    dd = [
+      adminObj.room,
+      {
+        user: myUser,
+        messages: [
+          {
+            sender: "admin",
+            message: adminObj.message,
+            time: adminObj.time,
+            date: adminObj.date,
+          },
+        ],
+      },
+    ];
+    console.log({ dd });
 
-  setRooms((prevRooms) => {
-    const currentIndex = activeIndex;
-    const roomExists = prevRooms.some((room) => room[0] === adminObj.room);
-    if (roomExists) {
-      return prevRooms.map((room) => {
-        if (room[0] === dbUsers[currentIndex].roomName) {
-          if (room[1] && room[1].messages) {
-            return {
-              ...room,
-              messages: [...room[1].messages, adminObj],
-            };
-          } else {
-            return {
-              ...room,
-              messages: [adminObj],
-            };
+    setRooms((prevRooms) => {
+      const currentIndex = activeIndex;
+      const roomExists = prevRooms.some((room) => room[0] === adminObj.room);
+      if (roomExists) {
+        return prevRooms.map((room) => {
+          if (room[0] === dbUsers[currentIndex].roomName) {
+            if (room[1] && room[1].messages) {
+              return {
+                ...room,
+                messages: [...room[1].messages, adminObj],
+              };
+            } else {
+              return {
+                ...room,
+                messages: [adminObj],
+              };
+            }
           }
-        }
-        return room;
-      });
-    } else {
-      const dbUser = dbUsers.find((user) => user.user.username === adminObj.room)?.user;
-      if (dbUser) {
-        return [...prevRooms, dd];
+          return room;
+        });
       } else {
-        console.log("check the code again");
+        const dbUser = dbUsers.find(
+          (user) => user.user.username === adminObj.room
+        )?.user;
+        if (dbUser) {
+          return [...prevRooms, dd];
+        } else {
+          console.log("check the code again");
+        }
       }
-    }
-  });
+    });
 
-  if (rooms.find((room) => room[0] === adminObj.room)) {
-    socket.emit("send-admin-message", adminObj);
-  } else {
-    socket.emit("send-admin-message", dd);
-  }
+    if (rooms.find((room) => room[0] === adminObj.room)) {
+      socket.emit("send-admin-message", adminObj);
+    } else {
+      socket.emit("send-admin-message", dd);
+    }
 
     console.log(dbMessages);
     setAdminInput("");
   }
-  
+
   console.log({ rooms });
+
   const handleContactClick = (index) => {
     setActiveIndex((prevActiveIndex) =>
       prevActiveIndex === index ? -1 : index
@@ -238,8 +257,12 @@ export default function Home() {
   async function saveChat() {
     const endPoint = "messages";
     const payload = {
-      roomName: rooms.find((room) => room[0] === dbUsers[activeIndex].roomName)?.[0],
-      messages: rooms.find((room) => room[0] === dbUsers[activeIndex].roomName)?.[1]?.messages,
+      roomName: rooms.find(
+        (room) => room[0] === dbUsers[activeIndex].roomName
+      )?.[0],
+      messages: rooms.find(
+        (room) => room[0] === dbUsers[activeIndex].roomName
+      )?.[1]?.messages,
     };
     console.log(payload);
     // newSocket.emit("delete-chat", payload.roomName)
@@ -263,14 +286,14 @@ export default function Home() {
       });
   }
   console.log(rooms);
-  
+
   if (rooms[activeIndex]) {
     console.log("current room is: ", dbUsers[activeIndex].roomName);
     // console.log({activeIndex});
-    
   } else {
     console.log("incorrect");
   }
+  
 
   // let roomName: string;
   return (
@@ -369,11 +392,8 @@ export default function Home() {
           </div>
           {/* contacts */}
           <div className="flex flex-col">
-            
             {dbUsers && dbUsers.length !== 0
-              ? 
-              dbUsers.map((user, i) => {
-                  
+              ? dbUsers.map((user, i) => {
                   const roomName = user.roomName;
                   const dpUrl = user.user.dpUrl ? user.user.dpUrl : "";
                   const latestMessage =
@@ -403,6 +423,42 @@ export default function Home() {
                   );
                 })
               : "No Chats"}
+
+            {rooms?.length !== 0 &&
+              rooms
+                .filter(
+                  (room) => !dbUsers?.some((user) => user.roomName === room[0])
+                )
+                .map((room, i) => {
+                  const roomName = room[0];
+                  const dpUrl = room[1]?.user?.dpurl ? room[1].user.dpurl : "";
+                  const latestMessage =
+                    room[1]?.messages && room[1].messages.length > 0
+                      ? room[1].messages[room[1].messages.length - 1]
+                      : null; // Modified to handle case where there are no messages
+                  const lastMessage =
+                    latestMessage && latestMessage.sender === "admin"
+                      ? `You: ${latestMessage.message}`
+                      : latestMessage && latestMessage.sender !== "admin"
+                      ? `${latestMessage.message}`
+                      : `Start A conversation with ${roomName}`;
+                  const latestMessageTime = latestMessage
+                    ? latestMessage.time
+                    : "";
+
+                  return (
+                    <Contact
+                      key={i}
+                      isActive={i === activeIndex}
+                      onClick={() => handleContactClick(i)}
+                      name={roomName}
+                      dpUrl={dpUrl}
+                      lastMessage={lastMessage}
+                      lastTime={latestMessageTime}
+                      unreadMessages={5}
+                    />
+                  );
+                })}
           </div>
         </div>
         {/* display whoever's isActive is true */}
@@ -503,51 +559,59 @@ export default function Home() {
                   ))
                 : "wait"}
 
-              {dbUsers[activeIndex] && rooms.find((room) => room[0] === dbUsers[activeIndex].roomName)?.[1]?.messages.map((message, i) => {
-                  // Check if the message is not in dbMessages
-                  const isNotInDb = dbMessages && dbMessages.messages ? !dbMessages?.messages.some(
-                    (dbMessage) => dbMessage.message === message.message 
-                  ): true;
-                  
-                  if (isNotInDb) {
-                    return (
-                      <div
-                        key={i}
-                        className={`flex flex-col items-${
-                          message.sender === "admin" ? "end" : "start"
-                        } ${
-                          message.sender === "admin"
-                            ? "bg-[#F24187]"
-                            : "bg-[#F4F4F7]"
-                        } rounded-lg w-fit px-2 py-1 ${
-                          message.sender === "admin" ? "ms-auto" : "ms-[15px]"
-                        } me-[15px] mb-2`}
-                      >
-                        <p
-                          className={`${
+              {dbUsers[activeIndex] &&
+                rooms
+                  .find(
+                    (room) => room[0] === dbUsers[activeIndex].roomName
+                  )?.[1]
+                  ?.messages.map((message, i) => {
+                    // Check if the message is not in dbMessages
+                    const isNotInDb =
+                      dbMessages && dbMessages.messages
+                        ? !dbMessages?.messages.some(
+                            (dbMessage) => dbMessage.message === message.message
+                          )
+                        : true;
+
+                    if (isNotInDb) {
+                      return (
+                        <div
+                          key={i}
+                          className={`flex flex-col items-${
+                            message.sender === "admin" ? "end" : "start"
+                          } ${
                             message.sender === "admin"
-                              ? "text-[#FAFAFA]"
-                              : "text-[#494345]"
-                          } text-[14px] font-normal`}
+                              ? "bg-[#F24187]"
+                              : "bg-[#F4F4F7]"
+                          } rounded-lg w-fit px-2 py-1 ${
+                            message.sender === "admin" ? "ms-auto" : "ms-[15px]"
+                          } me-[15px] mb-2`}
                         >
-                          {message.message}
-                        </p>
-                        <p
-                          className={`${
-                            message.sender === "admin"
-                              ? "text-[#FAFAFA]"
-                              : "text-[#00000073]"
-                          } text-[12px] font-light`}
-                        >
-                          {`${message.time.split(":")[0]}:${
-                            message.time.split(":")[1]
-                          }`}
-                        </p>
-                      </div>
-                    );
-                  }
-                  return null;
-                })}
+                          <p
+                            className={`${
+                              message.sender === "admin"
+                                ? "text-[#FAFAFA]"
+                                : "text-[#494345]"
+                            } text-[14px] font-normal`}
+                          >
+                            {message.message}
+                          </p>
+                          <p
+                            className={`${
+                              message.sender === "admin"
+                                ? "text-[#FAFAFA]"
+                                : "text-[#00000073]"
+                            } text-[12px] font-light`}
+                          >
+                            {`${message.time.split(":")[0]}:${
+                              message.time.split(":")[1]
+                            }`}
+                          </p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })}
 
               <div className="px-5 pb-5 flex flex-row mt-4">
                 <input
