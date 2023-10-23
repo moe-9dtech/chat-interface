@@ -77,7 +77,7 @@ io.on("connect", (socket) => {
     rooms.set(room, roomDetails);
     console.log("single room after setting it: ", roomDetails);
 
-    socket.emit("room-list", Array.from(rooms.entries()));
+    socket.to("admin-room").emit("room-list", Array.from(rooms.entries()));
   });
 
   // socket.on("delete-chat", (roomName) => {
