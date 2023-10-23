@@ -8,7 +8,6 @@ const rooms = new Map();
 
 io.on("connect", (socket) => {
 
-  socket.emit("room-list", Array.from(rooms.entries()));
 
   socket.on("new-user", (user) => {
     if (user.admin) {
@@ -29,6 +28,7 @@ io.on("connect", (socket) => {
       }
         socket.join(roomName);
     }
+  socket.emit("room-list", Array.from(rooms.entries()));
   });
   // dd = [adminObj.room, {user: myUser, messages: [{sender: "admin", message: adminObj.message, time: adminObj.time, date: adminObj.date}]}]
   socket.on("send-admin-message", (data) => {

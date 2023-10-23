@@ -185,7 +185,7 @@ export default function Home() {
     };
 
     console.log({adminObj});
-    const myUser = dbUsers.find(
+    const myUser = dbUsers?.find(
       (user) => user.user.username === adminObj.room
     )?.user;
     dd = [
@@ -205,10 +205,10 @@ export default function Home() {
     setRooms((prevRooms) => {
       const currentIndex = activeIndex;
       // checking if the room sending the message too existes in the Rooms state "uer is connected";
-      const roomExists = prevRooms.some((room) => room[0] === adminObj.room);
+      const roomExists = prevRooms.some((room) => room[0] == adminObj.room);
       if (roomExists) {
         return prevRooms.map((room) => {
-          if (activeIndexUsers !== -1 ? room[0] === dbUsers[activeIndexUsers].roomName : room[0] === dbUsers[activeIndexRooms].roomName) {
+          if (activeIndexUsers !== -1 ? room[0] == rooms[activeIndexRooms][0] : room[0] == dbUsers?.[setActiveIndexUsers].roomName) {
             if (room[1] && room[1].messages) {
               return {
                 ...room,
@@ -286,15 +286,15 @@ export default function Home() {
       });
   }
 
-  if (activeIndexRooms !== -1) {
-    console.log("current room is: ", rooms[activeIndexRooms][0]);
-    console.log("xyz", rooms.find((room) => room[0] === dbUsers[activeIndexRooms].roomName)?.[1]);
-    // console.log({activeIndex});
-  } else if (activeIndexUsers !== -1){
-    console.log("current db room is: ", dbUsers[activeIndexUsers].roomName);
-  } else {
-    console.log("No active room");
-  }
+  // if (activeIndexRooms !== -1) {
+  //   console.log("current room is: ", rooms[activeIndexRooms][0]);
+  //   console.log("xyz", rooms.find((room) => room[0] === dbUsers[activeIndexRooms].roomName)?.[1]);
+  //   // console.log({activeIndex});
+  // } else if (activeIndexUsers !== -1){
+  //   console.log("current db room is: ", dbUsers[activeIndexUsers].roomName);
+  // } else {
+  //   console.log("No active room");
+  // }
 
   return (
     <main className="flex flex-col justify-between">
@@ -560,7 +560,7 @@ export default function Home() {
                 : "wait"}
 
               {/* Get the messages from socket.io for the particular room */}
-              {(dbUsers[activeIndexUsers] || rooms[activeIndexRooms]) &&
+              {(dbUsers?.[activeIndexUsers] || rooms?.[activeIndexRooms]) &&
                 rooms
                   .find(
                     (room) => activeIndexUsers !== -1
