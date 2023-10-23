@@ -153,7 +153,6 @@ export default function Home() {
   useEffect(() => {
     getDbMessages();
     console.log({ dbMessages });
-    console.log({rooms});
   }, [activeIndexRooms, activeIndexUsers]);
 
   // function for sending messages to rooms
@@ -296,8 +295,7 @@ export default function Home() {
   } else {
     console.log("No active room");
   }
-  
-  // let roomName: string;
+
   return (
     <main className="flex flex-col justify-between">
       {/* main container */}
@@ -414,7 +412,7 @@ export default function Home() {
                   return (
                     <Contact
                       key={i}
-                      isActive={i === activeIndex}
+                      isActive={i === activeIndexUsers}
                       onClick={() => handleContactClickUsers(i)}
                       name={roomName}
                       dpUrl={dpUrl}
@@ -451,7 +449,7 @@ export default function Home() {
                   return (
                     <Contact
                       key={i}
-                      isActive={i === activeIndex}
+                      isActive={i === activeIndexRooms}
                       onClick={() => handleContactClickRooms(i)}
                       name={roomName}
                       dpUrl={dpUrl}
