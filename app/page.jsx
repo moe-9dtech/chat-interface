@@ -10,7 +10,8 @@ import Image from "next/image";
 export default function Home() {
   const [isSocketInitialized, setIsSocketInitialized] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
-  
+  const [activeIndexRooms, setActiveIndexRooms] = useState(-1)
+  const [activeIndexUsers, setActiveIndexUsers] = useState(-1)
   // const [messages, setMessages] = useState<UserData[]>([]);
   const [rooms, setRooms] = useState([]); //set rooms list -userNames-
   const [dbMessages, setDbMessages] = useState();
@@ -122,11 +123,11 @@ export default function Home() {
   async function getDbMessages() {
     // const localUrl = "http://172.16.150.11:5000/api/";
     const endPoint = "getmessages";
-    if (activeIndex === -1) {
+    if (activeIndexRooms === -1 && activeIndexUsers === -1) {
       return;
     }
     const payload = {
-      roomName: dbUsers?.[activeIndex].roomName, //rooms[activeIndex][0]
+      roomName: activeIndexUsers !== -1 ? dbUsers?.[activeIndexUsers].roomName : rooms[activeIndexRooms][0], //rooms[activeIndex][0]
     };
 
     console.log("payload: ", dbUsers?.[activeIndex]);
@@ -152,7 +153,8 @@ export default function Home() {
   useEffect(() => {
     getDbMessages();
     console.log({ dbMessages });
-  }, [activeIndex]);
+    console.log({rooms});
+  }, [activeIndexRooms, activeIndexUsers]);
 
   // function for sending messages to rooms
   function handleAdminSend() {
@@ -174,7 +176,7 @@ export default function Home() {
     const localDate = timeObj.toLocaleDateString();
     const adminObj = {
       username: "admin",
-      room: dbUsers[activeIndex].roomName || rooms[activeIndex][0],
+      room: activeIndexUsers !== -1 ? dbUsers[activeIndexUsers].roomName : rooms[activeIndexRooms][0],
       email: "abc@gmail.com",
       dpUrl: "https://picsum.photos/200",
       message: adminInput,
@@ -183,6 +185,7 @@ export default function Home() {
       sender: "admin",
     };
 
+    console.log({adminObj});
     const myUser = dbUsers.find(
       (user) => user.user.username === adminObj.room
     )?.user;
@@ -200,14 +203,13 @@ export default function Home() {
         ],
       },
     ];
-    console.log({ dd });
-
     setRooms((prevRooms) => {
       const currentIndex = activeIndex;
+      // checking if the room sending the message too existes in the Rooms state "uer is connected";
       const roomExists = prevRooms.some((room) => room[0] === adminObj.room);
       if (roomExists) {
         return prevRooms.map((room) => {
-          if (room[0] === dbUsers[currentIndex].roomName) {
+          if (activeIndexUsers !== -1 ? room[0] === dbUsers[activeIndexUsers].roomName : room[0] === dbUsers[activeIndexRooms].roomName) {
             if (room[1] && room[1].messages) {
               return {
                 ...room,
@@ -239,30 +241,29 @@ export default function Home() {
     } else {
       socket.emit("send-admin-message", dd);
     }
-
-    console.log(dbMessages);
     setAdminInput("");
   }
 
-  console.log({ rooms });
 
-  const handleContactClick = (index) => {
-    setActiveIndex((prevActiveIndex) =>
+  const handleContactClickUsers = (index) => {
+    setActiveIndexUsers((prevActiveIndex) =>
       prevActiveIndex === index ? -1 : index
     );
+    setActiveIndexRooms(-1);
   };
 
-  // console.log(rooms);
+  const handleContactClickRooms = (index) => {
+    setActiveIndexRooms((prevActiveIndex) =>
+      prevActiveIndex === index ? -1 : index
+    );
+    setActiveIndexUsers(-1);
+  };
 
   async function saveChat() {
     const endPoint = "messages";
     const payload = {
-      roomName: rooms.find(
-        (room) => room[0] === dbUsers[activeIndex].roomName
-      )?.[0],
-      messages: rooms.find(
-        (room) => room[0] === dbUsers[activeIndex].roomName
-      )?.[1]?.messages,
+      roomName: rooms.find((room) => activeIndexUsers !== -1 ? room[0] === dbUsers[activeIndexUsers].roomName : room[0] === rooms[activeIndexRooms][0])?.[0],
+      messages: activeIndexUsers ? rooms.find((room) => room[0] === dbUsers[activeIndexUsers].roomName )?.[1].messages : rooms.find((room) => room[0] === rooms[activeIndexRooms][0])[1].messages 
     };
     console.log(payload);
     // newSocket.emit("delete-chat", payload.roomName)
@@ -285,16 +286,17 @@ export default function Home() {
         console.log("successfull fetch response:", data);
       });
   }
-  console.log(rooms);
 
-  if (rooms[activeIndex]) {
-    console.log("current room is: ", dbUsers[activeIndex].roomName);
+  if (activeIndexRooms !== -1) {
+    console.log("current room is: ", rooms[activeIndexRooms][0]);
+    console.log("xyz", rooms.find((room) => room[0] === dbUsers[activeIndexRooms].roomName)?.[1]);
     // console.log({activeIndex});
+  } else if (activeIndexUsers !== -1){
+    console.log("current db room is: ", dbUsers[activeIndexUsers].roomName);
   } else {
-    console.log("incorrect");
+    console.log("No active room");
   }
   
-
   // let roomName: string;
   return (
     <main className="flex flex-col justify-between">
@@ -413,7 +415,7 @@ export default function Home() {
                     <Contact
                       key={i}
                       isActive={i === activeIndex}
-                      onClick={() => handleContactClick(i)}
+                      onClick={() => handleContactClickUsers(i)}
                       name={roomName}
                       dpUrl={dpUrl}
                       lastMessage={lastMessage}
@@ -450,7 +452,7 @@ export default function Home() {
                     <Contact
                       key={i}
                       isActive={i === activeIndex}
-                      onClick={() => handleContactClick(i)}
+                      onClick={() => handleContactClickRooms(i)}
                       name={roomName}
                       dpUrl={dpUrl}
                       lastMessage={lastMessage}
@@ -462,19 +464,19 @@ export default function Home() {
           </div>
         </div>
         {/* display whoever's isActive is true */}
-        {activeIndex !== -1 ? (
+        {activeIndexRooms !== -1 || activeIndexUsers !== -1 ? (
           <div className="flex flex-col w-full justify-between">
             <div className="flex fex-row justify-between border-b border-[#EEEEEE] px-2 py-5">
               <div className="userData flex flex-row items-center space-x-3">
                 <Image
                   className="rounded-full"
-                  src={dbUsers[activeIndex].user.dpUrl} //{rooms[activeIndex][1].user.dpurl}
+                  src={activeIndexUsers !== -1 ? dbUsers[activeIndexUsers].user.dpUrl : rooms[activeIndexRooms][1].user.dpurl} //{rooms[activeIndex][1].user.dpurl}
                   width={42}
                   height={42}
                   alt="User Pic"
                 />
                 <p className="text-[#494345] font-medium">
-                  {dbUsers[activeIndex].user.username}{" "}
+                  {activeIndexUsers !== -1 ? dbUsers[activeIndexUsers].user.username : rooms[activeIndexRooms][0]}{" "}
                 </p>
               </div>
               <button
@@ -501,7 +503,7 @@ export default function Home() {
                   </svg>
                 </button>
                 <button
-                  title={`you are chatting with ${dbUsers[activeIndex].user.username} now`}
+                  title={`you are chatting with ${activeIndexUsers !== -1 ? dbUsers[activeIndexUsers].user.username : rooms[activeIndexRooms][0]} now`}
                 >
                   <svg
                     width="42"
@@ -520,7 +522,7 @@ export default function Home() {
               </div>
             </div>
             <div id="js-messages" className="flex flex-col justify-end w-full">
-              {/* <p>Name: {roomName}</p> */}
+              {/* Get the messages of db for this user */}
               {dbMessages && dbMessages.messages
                 ? dbMessages.messages.map((message, i) => (
                     <div
@@ -559,10 +561,13 @@ export default function Home() {
                   ))
                 : "wait"}
 
-              {dbUsers[activeIndex] &&
+              {/* Get the messages from socket.io for the particular room */}
+              {(dbUsers[activeIndexUsers] || rooms[activeIndexRooms]) &&
                 rooms
                   .find(
-                    (room) => room[0] === dbUsers[activeIndex].roomName
+                    (room) => activeIndexUsers !== -1
+                    ? room[0] === dbUsers[activeIndexUsers].roomName
+                    : room[0] === rooms[activeIndexRooms][0]
                   )?.[1]
                   ?.messages.map((message, i) => {
                     // Check if the message is not in dbMessages
