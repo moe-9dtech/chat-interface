@@ -6,7 +6,12 @@ import Contact from "./components/contact";
 import React, { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import Image from "next/image";
-
+    // env: {
+    //     liveSocket: "https://localhost:3000",
+    //     localSocket: "http://localhost:6000",
+    //     liveApi: "https://localhost:5000/api/",
+    //     localApi: "http://localhost:5000/api/",
+    // }
 export default function Home() {
   const [isSocketInitialized, setIsSocketInitialized] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -19,8 +24,8 @@ export default function Home() {
   const [newUser, setNewUser] = useState();
   const [adminInput, setAdminInput] = useState("");
   const [socket, setSocket] = useState();
-  const apiUrl = process.env.liveApi;
-  const socketUrl = process.env.localSocket;
+  const apiUrl = "https://localhost:5000/api/";
+  const socketUrl = "https://localhost:3001";
   let dd = [];
 
   var newSocket;
