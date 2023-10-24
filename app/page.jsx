@@ -21,7 +21,6 @@ export default function Home() {
   const [socket, setSocket] = useState();
   const localUrl = "http://localhost:5000/api/";
   const localSocket = "http://localhost:3001";
-  const liveSocket = "https://chat-inter-3txh.vercel.app";
   let dd = [];
 
   var newSocket;
@@ -208,7 +207,7 @@ export default function Home() {
       const roomExists = prevRooms.some((room) => room[0] == adminObj.room);
       if (roomExists) {
         return prevRooms.map((room) => {
-          if (activeIndexUsers !== -1 ? room[0] == rooms[activeIndexRooms][0] : room[0] == dbUsers?.[setActiveIndexUsers].roomName) {
+          if (activeIndexUsers !== -1 ? room[0] == rooms?.[activeIndexRooms]?.[0] : room[0] == dbUsers?.[setActiveIndexUsers]?.roomName) {
             if (room[1] && room[1].messages) {
               return {
                 ...room,
