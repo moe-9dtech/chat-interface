@@ -8,8 +8,8 @@ export default function Home() {
   const [room, setRoom] = useState();
   const [dbMessages, setDbMessages] = useState(null);
   const [isSocketInitialized, setIsSocketInitialized] = useState(false);
-  const apiUrl = process.env.liveApi;
-  const socketUrl = process.env.localSocket;
+  const apiUrl = "https://localhost:5000/api/";
+  const socketUrl = "https://localhost:3001";
 
   var socket;
   const rooms = new Map();
