@@ -27,6 +27,7 @@ export default function Home() {
   newSocket = io(localSocket, {
     reconnection: true,
     reconnectionAttempts: 5,
+    // reconnectionDelay: 1000,
   });
   useEffect(() => {
     // Establish the socket connection
@@ -242,6 +243,12 @@ export default function Home() {
     setAdminInput("");
   }
 
+  function handleKeyDown (e) {
+    let key = e.key;
+    if (key === 'Enter') {
+      handleAdminSend();
+    }
+  }
 
   const handleContactClickUsers = (index) => {
     setActiveIndexUsers((prevActiveIndex) =>
@@ -621,6 +628,7 @@ export default function Home() {
                   type="text"
                   value={adminInput}
                   onChange={(e) => setAdminInput(e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e)}
                   placeholder="Type your message here.."
                 />
                 <button

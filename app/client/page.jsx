@@ -15,7 +15,8 @@ export default function Home() {
   const rooms = new Map();
   socket = io(localSocket, {
     reconnection: true,
-    reconnectionAttempts: 5
+    reconnectionAttempts: 5,
+    // reconnectionDelay: 1000,
   });
   useEffect(() => {
     socket.on("connect", (xyz) => {
@@ -93,7 +94,7 @@ export default function Home() {
     if (!isSocketInitialized) {
       console.error("Socket is not Initialized yet");
       return;
-    }
+    } 
     console.log("send message function triggered");
     function formatTime24Hours(date) {
       const hours = date.getHours().toString().padStart(2, "0");
@@ -154,6 +155,13 @@ export default function Home() {
     setUserInput("");
     console.log("messagessss", userObj);
     console.log({room});
+  }
+
+  function handleKeyDown(e) {
+    let key = e.key;
+    if (key === 'Enter') {
+      handleUserMessageSend();
+    }
   }
 
   async function getDbMessages() {
@@ -267,6 +275,7 @@ export default function Home() {
           type="text"
           value={userInput}
           onChange={(e) => setUserInput(e.target.value)}
+          onKeyDown={(e) => handleKeyDown(e)}
           placeholder="Type your message here.."
         />
         <button
