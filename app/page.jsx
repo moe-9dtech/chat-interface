@@ -20,7 +20,7 @@ export default function Home() {
   const [adminInput, setAdminInput] = useState("");
   const [socket, setSocket] = useState();
   const localUrl = "http://localhost:5000/api/";
-  const localSocket = "http://localhost:3001";
+  const localSocket = process.env.liveSocket;
   let dd = [];
 
   var newSocket;
