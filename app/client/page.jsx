@@ -10,7 +10,6 @@ export default function Home() {
   const [isSocketInitialized, setIsSocketInitialized] = useState(false);
   const localUrl = "http://localhost:5000/api/";
   const localSocket = 'http://localhost:3001';
-  const liveSocket = 'https://chat-inter-3txh.vercel.app';
 
   var socket;
   const rooms = new Map();
