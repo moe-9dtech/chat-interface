@@ -19,12 +19,12 @@ export default function Home() {
   const [newUser, setNewUser] = useState();
   const [adminInput, setAdminInput] = useState("");
   const [socket, setSocket] = useState();
-  const localUrl = "http://localhost:5000/api/";
-  const localSocket = process.env.liveSocket;
+  const apiUrl = process.env.liveApi;
+  const socketUrl = process.env.localSocket;
   let dd = [];
 
   var newSocket;
-  newSocket = io(localSocket, {
+  newSocket = io(socketUrl, {
     reconnection: true,
     reconnectionAttempts: 5,
     // reconnectionDelay: 1000,
@@ -91,7 +91,7 @@ export default function Home() {
   async function getDbUsers() {
     const endPoint = "fetchall";
 
-    await fetch(localUrl + endPoint, {
+    await fetch(apiUrl + endPoint, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -131,7 +131,7 @@ export default function Home() {
     };
 
     console.log("payload: ", dbUsers?.[activeIndex]);
-    await fetch(localUrl + endPoint, {
+    await fetch(apiUrl + endPoint, {
       method: "POST",
       body: JSON.stringify(payload),
       headers: {
@@ -273,7 +273,7 @@ export default function Home() {
     console.log(payload);
     // newSocket.emit("delete-chat", payload.roomName)
 
-    await fetch(localUrl + endPoint, {
+    await fetch(apiUrl + endPoint, {
       method: "POST",
       body: JSON.stringify(payload),
       headers: {

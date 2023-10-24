@@ -8,12 +8,12 @@ export default function Home() {
   const [room, setRoom] = useState();
   const [dbMessages, setDbMessages] = useState(null);
   const [isSocketInitialized, setIsSocketInitialized] = useState(false);
-  const localUrl = "http://localhost:5000/api/";
-  const localSocket = process.env.liveSocket;
+  const apiUrl = process.env.liveApi;
+  const socketUrl = process.env.localSocket;
 
   var socket;
   const rooms = new Map();
-  socket = io(localSocket, {
+  socket = io(socketUrl, {
     reconnection: true,
     reconnectionAttempts: 5,
     // reconnectionDelay: 1000,
@@ -175,7 +175,7 @@ export default function Home() {
   }
 
   try {
-    const response = await fetch(localUrl + endPoint, {
+    const response = await fetch(apiUrl + endPoint, {
       method: "POST",
       body: JSON.stringify(payload),
       headers: {
