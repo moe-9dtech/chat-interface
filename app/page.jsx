@@ -24,14 +24,17 @@ export default function Home() {
   const [newUser, setNewUser] = useState();
   const [adminInput, setAdminInput] = useState("");
   const [socket, setSocket] = useState();
-  const apiUrl = "https://localhost:5000/api/";
-  const socketUrl = "https://localhost:3001";
+  const localApiUrl = "http://localhost:5000/api/";
+  const localSocketUrl = "http://localhost:3001";
+  const apiUrl = "//92.205.188.229:5000/api/";
+  const socketUrl = "//periodsocket.9dtechnologies.dev";
   let dd = [];
 
   var newSocket;
-  newSocket = io(socketUrl, {
+  newSocket = io(localSocketUrl, {
     reconnection: true,
     reconnectionAttempts: 5,
+    maxHttpBufferSize: 1e8
     // reconnectionDelay: 1000,
   });
   useEffect(() => {
@@ -45,12 +48,20 @@ export default function Home() {
         dpurl: "dp",
         admin: true,
       });
+      
       // const admin = {username: newUser?.username, admin: true};
       newSocket.emit("new-user", { usrname: "admin", admin: true });
       // socket.emit("get-room-list");
       setIsSocketInitialized(true);
     });
-
+    // handle socket disconnect
+    newSocket.on("disconnect", (reason) => {
+        console.log("Disconnected from server, reason: ", reason);
+    });
+    // handle socket disconnection errors
+    newSocket.on("connect_error", (error) => {
+      console.log("Connection error: ", error);
+    });
     // Get the room list from the server
     newSocket.on("room-list", (roomList) => {
       const listMap = new Map(Object.entries(roomList));
@@ -59,6 +70,12 @@ export default function Home() {
       // this is the issue I have to tackle tomorrow morning
       setRooms(filteredRoom);
     });
+    return() => {
+      newSocket.off("connect");
+      newSocket.off("diconnect");
+      newSocket.off("connect_error");
+      newSocket.off("room-list");
+    }
   }, []);
 
   newSocket.on("receive-client-message", (userObj) => {
@@ -96,7 +113,7 @@ export default function Home() {
   async function getDbUsers() {
     const endPoint = "fetchall";
 
-    await fetch(apiUrl + endPoint, {
+    await fetch(localApiUrl + endPoint, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -136,7 +153,7 @@ export default function Home() {
     };
 
     console.log("payload: ", dbUsers?.[activeIndex]);
-    await fetch(apiUrl + endPoint, {
+    await fetch(localApiUrl + endPoint, {
       method: "POST",
       body: JSON.stringify(payload),
       headers: {
@@ -163,7 +180,7 @@ export default function Home() {
   // function for sending messages to rooms
   function handleAdminSend() {
     if (!isSocketInitialized) {
-      console.log("Socket is not Initialized yet");
+      console.log("Socket is not connected yet");
       return;
     }
 
@@ -278,7 +295,7 @@ export default function Home() {
     console.log(payload);
     // newSocket.emit("delete-chat", payload.roomName)
 
-    await fetch(apiUrl + endPoint, {
+    await fetch(localApiUrl + endPoint, {
       method: "POST",
       body: JSON.stringify(payload),
       headers: {

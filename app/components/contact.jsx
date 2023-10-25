@@ -18,7 +18,7 @@ export default function Contact({
       }`}
       onClick={onClick}
     >
-      <div className="flex flex-row gap-x-3 items-center">
+      <div className="flex flex-row gap-x-3 items-center min-w-0">
         {/* contact image, naem, pin??, text */}
         <Image
           className="rounded-full"
@@ -27,13 +27,13 @@ export default function Contact({
           height={36}
           alt="contact-image"
         />
-        <div className="flex flex-col">
+        <div className="flex flex-col min-w-0">
           <p className="text-[#494345] text-[14px] font-medium capitalize">
             {name}
           </p>
-          <p className="text-[#00000073] text-[13px] font-normal">
-            {lastMessage}
-          </p>
+            <p className="text-[#00000073] text-[13px] whitespace-nowrap overflow-hidden text-overflow-ellipsis flex-shrink-1">
+              {lastMessage}
+            </p>
         </div>
       </div>
       <div className="flex flex-col items-end">

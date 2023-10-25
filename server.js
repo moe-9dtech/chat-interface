@@ -30,7 +30,6 @@ io.on("connect", (socket) => {
     }
   socket.emit("room-list", Array.from(rooms.entries()));
   });
-  // dd = [adminObj.room, {user: myUser, messages: [{sender: "admin", message: adminObj.message, time: adminObj.time, date: adminObj.date}]}]
   socket.on("send-admin-message", (data) => {
     console.log("event: send-admin-message");
     const {room, message, date, time, sender} = data;
@@ -79,17 +78,6 @@ io.on("connect", (socket) => {
 
     socket.to("admin-room").emit("room-list", Array.from(rooms.entries()));
   });
-
-  // socket.on("delete-chat", (roomName) => {
-  //   if (rooms.has(roomName)) {
-  //     rooms.get(roomName).messages = [];
-  //     // socket.to(roomName).emit("chat-Deleted", roomName);
-  //     console.log("successfully deleted chat room");
-  //   } else {
-  //     // socket.emit("chat-deletion-faild", `Room "${roomName}" not Found`);
-  //     console.log("chat room deletion failed");
-  //   }
-  // }) 
 
   socket.on("disconnect", () => {
     const roomName = Array.from(rooms.keys()).find(
