@@ -5,6 +5,7 @@ import { io } from "socket.io-client";
 export default function Home() {
   const [userInput, setUserInput] = useState("");
   const [newUser, setNewUser] = useState();
+  const [newSocket, setNewSocket] = useState();
   const [room, setRoom] = useState();
   const [dbMessages, setDbMessages] = useState(null);
   const [isSocketInitialized, setIsSocketInitialized] = useState(false);
@@ -15,13 +16,16 @@ export default function Home() {
 
   var socket;
   const rooms = new Map();
-  socket = io(localSocketUrl, {
-    reconnection: true,
-    reconnectionAttempts: 5,
-    maxHttpBufferSize: 1e8
-    // reconnectionDelay: 1000,
-  });
+
   useEffect(() => {
+    socket = io(localSocketUrl, {
+      reconnection: true,
+      reconnectionAttempts: 5,
+      maxHttpBufferSize: 10 * 1024 * 1024,
+      allowEIO3: true,
+      // reconnectionDelay: 1000,
+    });
+    setNewSocket(socket);
     socket.on("connect", (xyz) => {
       console.log({ xyz });
 
@@ -42,11 +46,14 @@ export default function Home() {
     });
     // handle socket disconnect
     socket.on("disconnect", (reason) => {
-        console.log("Disconnected from server, reason: ", reason);
+      console.log("Disconnected from server, reason: ", reason);
     });
     // handle socket disconnection errors
     socket.on("connect_error", (error) => {
       console.log("Connection error: ", error);
+      if (error.message.includes("net::ERR_NETWORK_CHANGED")) {
+        socket.connect();
+      }
     });
     socket.on("room-list", (roomList) => {
       console.log({ newUser });
@@ -94,20 +101,20 @@ export default function Home() {
 
     socket.on("get-admin-message", handleReceiveAdminMessage);
     return () => {
-        socket.off("get-admin-message");
-        socket.off("connect");
-        socket.off("diconnect");
-        socket.off("connect_error");
-        socket.off("room-list");
-      };
+      socket.off("get-admin-message");
+      socket.off("connect");
+      socket.off("diconnect");
+      socket.off("connect_error");
+      socket.off("room-list");
+    };
   }, [isSocketInitialized]);
 
   // function for sending messages to rooms
   function handleUserMessageSend() {
     if (!isSocketInitialized) {
-      console.error("Socket is not Initialized yet");
+      console.error("Socket is not connected yet");
       return;
-    } 
+    }
     console.log("send message function triggered");
     function formatTime24Hours(date) {
       const hours = date.getHours().toString().padStart(2, "0");
@@ -132,7 +139,7 @@ export default function Home() {
       sender: newUser?.username || "",
     };
     // Send the message to the selected room
-    socket.emit("send-client-message", userObj);
+    newSocket?.emit("send-client-message", userObj);
 
     const userMsgObj = {
       sender: newUser?.username || "",
@@ -158,54 +165,54 @@ export default function Home() {
         return [
           prevRoom[0],
           {
-            user:newUser,
-            messages:[userMsgObj]
-          }
-        ]
+            user: newUser,
+            messages: [userMsgObj],
+          },
+        ];
       }
     });
 
     setUserInput("");
     console.log("messagessss", userObj);
-    console.log({room});
+    console.log({ room });
   }
 
   function handleKeyDown(e) {
     let key = e.key;
-    if (key === 'Enter') {
+    if (key === "Enter") {
       handleUserMessageSend();
     }
   }
 
   async function getDbMessages() {
-  const endPoint = "getmessages";
-  const payload = {
-    roomName: newUser?.username,
-  };
+    const endPoint = "getmessages";
+    const payload = {
+      roomName: newUser?.username,
+    };
 
-  if (!newUser) {
-    return;
-  }
-
-  try {
-    const response = await fetch(localApiUrl + endPoint, {
-      method: "POST",
-      body: JSON.stringify(payload),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error("Fetch failed");
+    if (!newUser) {
+      return;
     }
 
-    const data = await response.json();
-    setDbMessages(data);
-  } catch (error) {
-    console.error("Error fetching messages:", error);
+    try {
+      const response = await fetch(localApiUrl + endPoint, {
+        method: "POST",
+        body: JSON.stringify(payload),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Fetch failed");
+      }
+
+      const data = await response.json();
+      setDbMessages(data);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+    }
   }
-}
   useEffect(() => {
     getDbMessages();
   }, [newUser]);
@@ -248,7 +255,7 @@ export default function Home() {
             </div>
           ))
         ) : (
-          <p>No messages yet</p>
+          <p></p>
         )}
 
         {room && room[1] && room[1].messages.length > 0 ? (
