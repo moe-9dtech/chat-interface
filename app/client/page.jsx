@@ -13,10 +13,8 @@ export default function Home() {
   const localSocketUrl = "http://localhost:3001";
   const apiUrl = "//92.205.188.229:5000/api/";
   const socketUrl = "//periodsocket.9dtechnologies.dev";
-
   var socket;
   const rooms = new Map();
-
   useEffect(() => {
     socket = io(localSocketUrl, {
       reconnection: true,
