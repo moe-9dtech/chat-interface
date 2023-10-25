@@ -8,6 +8,8 @@ export default function Home() {
   const [room, setRoom] = useState();
   const [dbMessages, setDbMessages] = useState(null);
   const [isSocketInitialized, setIsSocketInitialized] = useState(false);
+  const localApiUrl = "http://localhost:5000/api/";
+  const localSocketUrl = "http://localhost:3001";
   const apiUrl = "//92.205.188.229:5000/api/";
   const socketUrl = "//periodsocket.9dtechnologies.dev";
   var socket;
@@ -15,6 +17,7 @@ export default function Home() {
   socket = io(socketUrl, {
     reconnection: true,
     reconnectionAttempts: 5,
+    maxHttpBufferSize: 1e8
     // reconnectionDelay: 1000,
   });
   useEffect(() => {
@@ -36,7 +39,14 @@ export default function Home() {
       });
       setIsSocketInitialized(true);
     });
-
+    // handle socket disconnect
+    socket.on("disconnect", (reason) => {
+        console.log("Disconnected from server, reason: ", reason);
+    });
+    // handle socket disconnection errors
+    socket.on("connect_error", (error) => {
+      console.log("Connection error: ", error);
+    });
     socket.on("room-list", (roomList) => {
       console.log({ newUser });
 
@@ -82,10 +92,13 @@ export default function Home() {
     };
 
     socket.on("get-admin-message", handleReceiveAdminMessage);
-
     return () => {
-      socket.off("get-admin-message");
-    };
+        socket.off("get-admin-message");
+        socket.off("connect");
+        socket.off("diconnect");
+        socket.off("connect_error");
+        socket.off("room-list");
+      };
   }, [isSocketInitialized]);
 
   // function for sending messages to rooms
@@ -174,7 +187,7 @@ export default function Home() {
   }
 
   try {
-    const response = await fetch(apiUrl + endPoint, {
+    const response = await fetch(localApiUrl + endPoint, {
       method: "POST",
       body: JSON.stringify(payload),
       headers: {
