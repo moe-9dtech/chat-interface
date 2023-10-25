@@ -90,6 +90,6 @@ io.on("connect", (socket) => {
   });
 });
 
-const PORT = 3001;
+const PORT = 3000;
 httpServer.listen(PORT, () => {
 });

@@ -24,14 +24,15 @@ export default function Home() {
   const [newUser, setNewUser] = useState();
   const [adminInput, setAdminInput] = useState("");
   const [socket, setSocket] = useState();
-  const localApiUrl = "http://localhost:5000/api/";
-  const localSocketUrl = "http://localhost:3001";
+
   const apiUrl = "//92.205.188.229:5000/api/";
   const socketUrl = "//periodsocket.9dtechnologies.dev";
   let dd = [];
 
   var newSocket;
-  newSocket = io(localSocketUrl, {
+
+  newSocket = io(socketUrl, {
+    
     reconnection: true,
     reconnectionAttempts: 5,
     maxHttpBufferSize: 1e8
@@ -48,7 +49,7 @@ export default function Home() {
         dpurl: "dp",
         admin: true,
       });
-      
+
       // const admin = {username: newUser?.username, admin: true};
       newSocket.emit("new-user", { usrname: "admin", admin: true });
       // socket.emit("get-room-list");
