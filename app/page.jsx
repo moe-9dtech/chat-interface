@@ -6,17 +6,17 @@ import Contact from "./components/contact";
 import React, { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import Image from "next/image";
-    // env: {
-    //     liveSocket: "https://localhost:3000",
-    //     localSocket: "http://localhost:6000",
-    //     liveApi: "https://localhost:5000/api/",
-    //     localApi: "http://localhost:5000/api/",
-    // }
+// env: {
+//     liveSocket: "https://localhost:3000",
+//     localSocket: "http://localhost:6000",
+//     liveApi: "https://localhost:5000/api/",
+//     localApi: "http://localhost:5000/api/",
+// }
 export default function Home() {
   const [isSocketInitialized, setIsSocketInitialized] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const [activeIndexRooms, setActiveIndexRooms] = useState(-1)
-  const [activeIndexUsers, setActiveIndexUsers] = useState(-1)
+  const [activeIndexRooms, setActiveIndexRooms] = useState(-1);
+  const [activeIndexUsers, setActiveIndexUsers] = useState(-1);
   // const [messages, setMessages] = useState<UserData[]>([]);
   const [rooms, setRooms] = useState([]); //set rooms list -userNames-
   const [dbMessages, setDbMessages] = useState();
@@ -31,16 +31,15 @@ export default function Home() {
 
   var newSocket;
 
-  newSocket = io(socketUrl, {
-    
-    reconnection: true,
-    reconnectionAttempts: 5,
-    maxHttpBufferSize: 1e8
-    // reconnectionDelay: 1000,
-  });
   useEffect(() => {
     // Establish the socket connection
-
+    newSocket = io(localSocketUrl, {
+      reconnection: true,
+      reconnectionAttempts: 5,
+      maxHttpBufferSize: 10 * 1024 * 1024,
+      allowEIO3: true,
+      // reconnectionDelay: 1000,
+    });
     setSocket(newSocket);
     newSocket.on("connect", () => {
       setNewUser({
@@ -57,11 +56,14 @@ export default function Home() {
     });
     // handle socket disconnect
     newSocket.on("disconnect", (reason) => {
-        console.log("Disconnected from server, reason: ", reason);
+      console.log("Disconnected from server, reason: ", reason);
     });
     // handle socket disconnection errors
     newSocket.on("connect_error", (error) => {
       console.log("Connection error: ", error);
+      if (error.message.includes("net::ERR_NETWORK_CHANGED")) {
+        socket.connect();
+      }
     });
     // Get the room list from the server
     newSocket.on("room-list", (roomList) => {
@@ -71,15 +73,15 @@ export default function Home() {
       // this is the issue I have to tackle tomorrow morning
       setRooms(filteredRoom);
     });
-    return() => {
+    return () => {
       newSocket.off("connect");
       newSocket.off("diconnect");
       newSocket.off("connect_error");
       newSocket.off("room-list");
-    }
+    };
   }, []);
 
-  newSocket.on("receive-client-message", (userObj) => {
+  socket?.on("receive-client-message", (userObj) => {
     const { sender, message, date, time } = userObj;
     console.log('event "receive-client-message" fird ');
     console.log({ userObj });
@@ -95,8 +97,6 @@ export default function Home() {
     setRooms((prevRooms) => {
       return prevRooms.map((room) => {
         if (room[0] === userObj.room) {
-          console.log("success!");
-
           return [
             room[0],
             {
@@ -150,7 +150,10 @@ export default function Home() {
       return;
     }
     const payload = {
-      roomName: activeIndexUsers !== -1 ? dbUsers?.[activeIndexUsers].roomName : rooms[activeIndexRooms][0], //rooms[activeIndex][0]
+      roomName:
+        activeIndexUsers !== -1
+          ? dbUsers?.[activeIndexUsers].roomName
+          : rooms[activeIndexRooms][0], //rooms[activeIndex][0]
     };
 
     console.log("payload: ", dbUsers?.[activeIndex]);
@@ -198,7 +201,10 @@ export default function Home() {
     const localDate = timeObj.toLocaleDateString();
     const adminObj = {
       username: "admin",
-      room: activeIndexUsers !== -1 ? dbUsers[activeIndexUsers].roomName : rooms[activeIndexRooms][0],
+      room:
+        activeIndexUsers !== -1
+          ? dbUsers[activeIndexUsers].roomName
+          : rooms[activeIndexRooms][0],
       email: "abc@gmail.com",
       dpUrl: "https://picsum.photos/200",
       message: adminInput,
@@ -207,7 +213,7 @@ export default function Home() {
       sender: "admin",
     };
 
-    console.log({adminObj});
+    console.log({ adminObj });
     const myUser = dbUsers?.find(
       (user) => user.user.username === adminObj.room
     )?.user;
@@ -231,7 +237,11 @@ export default function Home() {
       const roomExists = prevRooms.some((room) => room[0] == adminObj.room);
       if (roomExists) {
         return prevRooms.map((room) => {
-          if (activeIndexUsers !== -1 ? room[0] == rooms?.[activeIndexRooms]?.[0] : room[0] == dbUsers?.[setActiveIndexUsers]?.roomName) {
+          if (
+            activeIndexUsers !== -1
+              ? room[0] == rooms?.[activeIndexRooms]?.[0]
+              : room[0] == dbUsers?.[setActiveIndexUsers]?.roomName
+          ) {
             if (room[1] && room[1].messages) {
               return {
                 ...room,
@@ -266,9 +276,9 @@ export default function Home() {
     setAdminInput("");
   }
 
-  function handleKeyDown (e) {
+  function handleKeyDown(e) {
     let key = e.key;
-    if (key === 'Enter') {
+    if (key === "Enter") {
       handleAdminSend();
     }
   }
@@ -290,8 +300,17 @@ export default function Home() {
   async function saveChat() {
     const endPoint = "messages";
     const payload = {
-      roomName: rooms.find((room) => activeIndexUsers !== -1 ? room[0] === dbUsers[activeIndexUsers].roomName : room[0] === rooms[activeIndexRooms][0])?.[0],
-      messages: activeIndexUsers ? rooms.find((room) => room[0] === dbUsers[activeIndexUsers].roomName )?.[1].messages : rooms.find((room) => room[0] === rooms[activeIndexRooms][0])[1].messages 
+      roomName: rooms.find((room) =>
+        activeIndexUsers !== -1
+          ? room[0] === dbUsers[activeIndexUsers].roomName
+          : room[0] === rooms[activeIndexRooms][0]
+      )?.[0],
+      messages: activeIndexUsers
+        ? rooms.find(
+            (room) => room[0] === dbUsers[activeIndexUsers].roomName
+          )?.[1].messages
+        : rooms.find((room) => room[0] === rooms[activeIndexRooms][0])[1]
+            .messages,
     };
     console.log(payload);
     // newSocket.emit("delete-chat", payload.roomName)
@@ -314,16 +333,6 @@ export default function Home() {
         console.log("successfull fetch response:", data);
       });
   }
-
-  // if (activeIndexRooms !== -1) {
-  //   console.log("current room is: ", rooms[activeIndexRooms][0]);
-  //   console.log("xyz", rooms.find((room) => room[0] === dbUsers[activeIndexRooms].roomName)?.[1]);
-  //   // console.log({activeIndex});
-  // } else if (activeIndexUsers !== -1){
-  //   console.log("current db room is: ", dbUsers[activeIndexUsers].roomName);
-  // } else {
-  //   console.log("No active room");
-  // }
 
   return (
     <main className="flex flex-col justify-between">
@@ -451,7 +460,7 @@ export default function Home() {
                     />
                   );
                 })
-              : "No Chats"}
+              : ""}
 
             {rooms?.length !== 0 &&
               rooms
@@ -497,13 +506,19 @@ export default function Home() {
               <div className="userData flex flex-row items-center space-x-3">
                 <Image
                   className="rounded-full"
-                  src={activeIndexUsers !== -1 ? dbUsers[activeIndexUsers].user.dpUrl : rooms[activeIndexRooms][1].user.dpurl} //{rooms[activeIndex][1].user.dpurl}
+                  src={
+                    activeIndexUsers !== -1
+                      ? dbUsers[activeIndexUsers].user.dpUrl
+                      : rooms[activeIndexRooms][1].user.dpurl
+                  } //{rooms[activeIndex][1].user.dpurl}
                   width={42}
                   height={42}
                   alt="User Pic"
                 />
                 <p className="text-[#494345] font-medium">
-                  {activeIndexUsers !== -1 ? dbUsers[activeIndexUsers].user.username : rooms[activeIndexRooms][0]}{" "}
+                  {activeIndexUsers !== -1
+                    ? dbUsers[activeIndexUsers].user.username
+                    : rooms[activeIndexRooms][0]}{" "}
                 </p>
               </div>
               <button
@@ -530,7 +545,11 @@ export default function Home() {
                   </svg>
                 </button>
                 <button
-                  title={`you are chatting with ${activeIndexUsers !== -1 ? dbUsers[activeIndexUsers].user.username : rooms[activeIndexRooms][0]} now`}
+                  title={`you are chatting with ${
+                    activeIndexUsers !== -1
+                      ? dbUsers[activeIndexUsers].user.username
+                      : rooms[activeIndexRooms][0]
+                  } now`}
                 >
                   <svg
                     width="42"
@@ -586,15 +605,15 @@ export default function Home() {
                       </p>
                     </div>
                   ))
-                : "wait"}
+                : ""}
 
               {/* Get the messages from socket.io for the particular room */}
               {(dbUsers?.[activeIndexUsers] || rooms?.[activeIndexRooms]) &&
                 rooms
-                  .find(
-                    (room) => activeIndexUsers !== -1
-                    ? room[0] === dbUsers[activeIndexUsers].roomName
-                    : room[0] === rooms[activeIndexRooms][0]
+                  .find((room) =>
+                    activeIndexUsers !== -1
+                      ? room[0] === dbUsers[activeIndexUsers].roomName
+                      : room[0] === rooms[activeIndexRooms][0]
                   )?.[1]
                   ?.messages.map((message, i) => {
                     // Check if the message is not in dbMessages
