@@ -1,17 +1,11 @@
 "use client";
 // Admin Code
-
 import SortDropdown from "./components/sortDropdown";
 import Contact from "./components/contact";
 import React, { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import Image from "next/image";
-// env: {
-//     liveSocket: "https://localhost:3000",
-//     localSocket: "http://localhost:6000",
-//     liveApi: "https://localhost:5000/api/",
-//     localApi: "http://localhost:5000/api/",
-// }
+
 export default function Home() {
   const [isSocketInitialized, setIsSocketInitialized] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -25,6 +19,8 @@ export default function Home() {
   const [adminInput, setAdminInput] = useState("");
   const [socket, setSocket] = useState();
 
+  const localApiUrl = "http://localhost:5000/api/";
+  const localSocketUrl = "http://localhost:3001";
   const apiUrl = "//92.205.188.229:5000/api/";
   const socketUrl = "//periodsocket.9dtechnologies.dev";
   let dd = [];
@@ -305,12 +301,12 @@ export default function Home() {
           ? room[0] === dbUsers[activeIndexUsers].roomName
           : room[0] === rooms[activeIndexRooms][0]
       )?.[0],
-      messages: activeIndexUsers
-        ? rooms.find(
-            (room) => room[0] === dbUsers[activeIndexUsers].roomName
-          )?.[1].messages
-        : rooms.find((room) => room[0] === rooms[activeIndexRooms][0])[1]
-            .messages,
+      messages: activeIndexUsers !== -1
+          ? rooms.find(
+              (room) => room[0] === dbUsers[activeIndexUsers].roomName
+            )?.[1].messages
+          : rooms.find((room) => room[0] === rooms[activeIndexRooms][0])[1]
+              .messages,
     };
     console.log(payload);
     // newSocket.emit("delete-chat", payload.roomName)
@@ -430,38 +426,6 @@ export default function Home() {
           </div>
           {/* contacts */}
           <div className="flex flex-col">
-            {dbUsers && dbUsers.length !== 0
-              ? dbUsers.map((user, i) => {
-                  const roomName = user.roomName;
-                  const dpUrl = user.user.dpUrl ? user.user.dpUrl : "";
-                  const latestMessage =
-                      user.messages && user.messages.length > 0
-                        ? user.messages[user.messages.length - 1]
-                        : "",
-                    lastMessage =
-                      latestMessage && latestMessage.sender === "admin"
-                        ? `You: ${latestMessage.message}`
-                        : latestMessage && latestMessage.sender !== "admin"
-                        ? `${latestMessage.message}`
-                        : `Start A conversation with ${roomName}`,
-                    // LtestMessageSender = latestMessage ? latestMessage.sender : '',
-                    latestMessageTime = latestMessage ? latestMessage.time : "";
-
-                  return (
-                    <Contact
-                      key={i}
-                      isActive={i === activeIndexUsers}
-                      onClick={() => handleContactClickUsers(i)}
-                      name={roomName}
-                      dpUrl={dpUrl}
-                      lastMessage={lastMessage}
-                      lastTime={latestMessageTime}
-                      unreadMessages={5}
-                    />
-                  );
-                })
-              : ""}
-
             {rooms?.length !== 0 &&
               rooms
                 .filter(
@@ -496,7 +460,40 @@ export default function Home() {
                       unreadMessages={5}
                     />
                   );
-                })}
+                })
+              }
+
+            {dbUsers && dbUsers.length !== 0
+              ? dbUsers.map((user, i) => {
+                  const roomName = user.roomName;
+                  const dpUrl = user.user.dpUrl ? user.user.dpUrl : "";
+                  const latestMessage =
+                      user.messages && user.messages.length > 0
+                        ? user.messages[user.messages.length - 1]
+                        : "",
+                    lastMessage =
+                      latestMessage && latestMessage.sender === "admin"
+                        ? `You: ${latestMessage.message}`
+                        : latestMessage && latestMessage.sender !== "admin"
+                        ? `${latestMessage.message}`
+                        : `Start A conversation with ${roomName}`,
+                    // LtestMessageSender = latestMessage ? latestMessage.sender : '',
+                    latestMessageTime = latestMessage ? latestMessage.time : "";
+
+                  return (
+                    <Contact
+                      key={i}
+                      isActive={i === activeIndexUsers}
+                      onClick={() => handleContactClickUsers(i)}
+                      name={roomName}
+                      dpUrl={dpUrl}
+                      lastMessage={lastMessage}
+                      lastTime={latestMessageTime}
+                      unreadMessages={5}
+                    />
+                  );
+                })
+              : ""}
           </div>
         </div>
         {/* display whoever's isActive is true */}
