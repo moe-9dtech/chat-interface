@@ -8,16 +8,18 @@ import Image from "next/image";
 
 export default function Home() {
   const [isSocketInitialized, setIsSocketInitialized] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(-1);
   const [activeIndexRooms, setActiveIndexRooms] = useState(-1);
   const [activeIndexUsers, setActiveIndexUsers] = useState(-1);
-  // const [messages, setMessages] = useState<UserData[]>([]);
+  const [activeIndexSearch, setActiveIndexSearch] = useState(-1);
   const [rooms, setRooms] = useState([]); //set rooms list -userNames-
   const [dbMessages, setDbMessages] = useState();
   const [dbUsers, setDbUsers] = useState([]);
-  const [newUser, setNewUser] = useState();
   const [adminInput, setAdminInput] = useState("");
   const [socket, setSocket] = useState();
+  const [totalRooms, setTotalRooms] = useState([]);
+  const [filterResults, setFilterResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
 
   const localApiUrl = "http://localhost:5000/api/";
   const localSocketUrl = "http://localhost:3001";
@@ -38,15 +40,8 @@ export default function Home() {
     });
     setSocket(newSocket);
     newSocket.on("connect", () => {
-      setNewUser({
-        username: "admin",
-        email: "admin",
-        dpurl: "dp",
-        admin: true,
-      });
-
       // const admin = {username: newUser?.username, admin: true};
-      newSocket.emit("new-user", { usrname: "admin", admin: true });
+      newSocket.emit("new-user", { usrname: "admin", email: "admin@gmail.com", dpUrl: "https://picsum.photos/200", admin: true });
       // socket.emit("get-room-list");
       setIsSocketInitialized(true);
     });
@@ -68,6 +63,15 @@ export default function Home() {
       let filteredRoom = roomArray.filter((room) => room[0] !== "admin-room");
       // this is the issue I have to tackle tomorrow morning
       setRooms(filteredRoom);
+      setTotalRooms((prevDbRooms) => {
+        if (prevDbRooms) {
+          const uniqueRooms = new Set ([...filteredRoom, ...prevDbRooms]);
+          return Array.from(uniqueRooms);
+        } else {
+          return filteredRoom;
+        }
+      })
+      
     });
     return () => {
       newSocket.off("connect");
@@ -126,17 +130,20 @@ export default function Home() {
         console.log({ data });
         // setRooms(data.users);
         setDbUsers(data.users);
+        const tempRooms = data.users.map((user) => {
+          return user.roomName
+        });
       });
   }
 
   useEffect(() => {
     getDbUsers();
+    console.log(dbUsers);
   }, []);
 
   useEffect(() => {
-    console.log({ dbUsers });
-    console.log({ rooms });
-  }, [dbUsers]);
+    console.log(filterResults);
+  }, [filterResults]);
 
   // Function to Get Messages From Database
   async function getDbMessages() {
@@ -149,10 +156,12 @@ export default function Home() {
       roomName:
         activeIndexUsers !== -1
           ? dbUsers?.[activeIndexUsers].roomName
+          : activeIndexSearch !== -1
+          ? (filterResults[activeIndexSearch].roomName ? filterResults[activeIndexSearch].user.username : filterResults[activeIndexSearch][0])
           : rooms[activeIndexRooms][0], //rooms[activeIndex][0]
     };
+    console.log({payload});
 
-    console.log("payload: ", dbUsers?.[activeIndex]);
     await fetch(localApiUrl + endPoint, {
       method: "POST",
       body: JSON.stringify(payload),
@@ -175,7 +184,7 @@ export default function Home() {
   useEffect(() => {
     getDbMessages();
     console.log({ dbMessages });
-  }, [activeIndexRooms, activeIndexUsers]);
+  }, [activeIndexSearch, activeIndexRooms, activeIndexUsers]);
 
   // function for sending messages to rooms
   function handleAdminSend() {
@@ -228,7 +237,6 @@ export default function Home() {
       },
     ];
     setRooms((prevRooms) => {
-      const currentIndex = activeIndex;
       // checking if the room sending the message too existes in the Rooms state "uer is connected";
       const roomExists = prevRooms.some((room) => room[0] == adminObj.room);
       if (roomExists) {
@@ -284,6 +292,7 @@ export default function Home() {
       prevActiveIndex === index ? -1 : index
     );
     setActiveIndexRooms(-1);
+    setActiveIndexSearch(-1);
   };
 
   const handleContactClickRooms = (index) => {
@@ -291,7 +300,23 @@ export default function Home() {
       prevActiveIndex === index ? -1 : index
     );
     setActiveIndexUsers(-1);
+    setActiveIndexSearch(-1);
   };
+
+  const handleSearchResultClickRooms = (index) => {
+    setActiveIndexSearch((prevActiveIndex) =>
+      prevActiveIndex === index ? -1 : index
+    );
+    setActiveIndexUsers(-1);
+    setActiveIndexRooms(-1);
+  };
+
+  function handleCloseSearch() {
+    setIsSearching(false);
+    setSearchInput("");
+  }
+
+  console.log(activeIndexRooms, activeIndexSearch, activeIndexUsers);
 
   async function saveChat() {
     const endPoint = "messages";
@@ -329,6 +354,37 @@ export default function Home() {
         console.log("successfull fetch response:", data);
       });
   }
+
+  function handleSearchInput(input) {
+    setSearchInput(input);
+    setIsSearching(true);
+    if(input.trim() == "") {
+      setFilterResults(null);
+    } else {
+      const foundRooms = totalRooms.filter((room) => (Array.isArray(room) && room[0].includes(input)) || (room.roomName && room.roomName.includes(input)));
+    setFilterResults(foundRooms ? foundRooms : null);
+    }
+  }
+
+  function searchValuesSetter() {
+    if (rooms.length > 0 && !dbUsers) {
+      setTotalRooms(rooms);
+    } else if(rooms.length == 0 && dbUsers) {
+      setTotalRooms(dbUsers);
+    } else if (rooms.length == 0 && !dbUsers) {
+      setTotalRooms(null);
+    } else {
+      const uniqueRooms = new Set([...dbUsers, ...rooms]);
+      setTotalRooms(Array.from(uniqueRooms));
+    }
+  }
+
+  console.log({totalRooms});
+
+  console.log({rooms});
+  useEffect(() => {
+    searchValuesSetter();
+  }, [dbUsers, rooms])
 
   return (
     <main className="flex flex-col justify-between">
@@ -399,7 +455,8 @@ export default function Home() {
               <p className="font-medium text-[#8C8C8C]">Sign out</p>
             </div>
           </div>
-          <div className="flex flex-row bg-[#EEEEEE] py-2 mx-5 ps-4 rounded-md space-x-3 items-center">
+          <div className="flex flex-row bg-[#EEEEEE] py-3 mx-5 ps-4 rounded-md justify-between items-center">
+            <div className="flex flex-row space-x-3 items-center">
             <svg
               width="12"
               height="12"
@@ -418,15 +475,32 @@ export default function Home() {
               className="text-[#00000073] text-[14px] bg-transparent w-full outline-none"
               placeholder="Search"
               type="text"
+              onChange={(e) => handleSearchInput(e.target.value)}
+              value={searchInput}
             />
+            </div>
+            { isSearching && (
+                <button
+                className="pe-3"
+                onClick={handleCloseSearch}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50" width="15" height="15">
+                    <path d="M9.15625 6.3125L6.3125 9.15625L22.15625 25L6.21875 40.96875L9.03125 43.78125L25 27.84375L40.9375 43.78125L43.78125 40.9375L27.84375 25L43.6875 9.15625L40.84375 6.3125L25 22.15625Z" fill="#676767" stroke="676767"/>
+                  </svg>
+                </button>
+              )
+            }
+
+
           </div>
           <div className="flex flex-row items-center px-5 justify-between">
             <p className="font-normal text-[#000000A6] text-[12px]">Sort by</p>
             <SortDropdown />
           </div>
           {/* contacts */}
+          {/* render contacts from live chat rooms */}
           <div className="flex flex-col">
-            {rooms?.length !== 0 &&
+            {isSearching === false && rooms?.length !== 0 &&
               rooms
                 .filter(
                   (room) => !dbUsers?.some((user) => user.roomName === room[0])
@@ -463,7 +537,8 @@ export default function Home() {
                 })
               }
 
-            {dbUsers && dbUsers.length !== 0
+              {/* render contacts from DB */}
+            {isSearching === false && dbUsers && dbUsers.length !== 0
               ? dbUsers.map((user, i) => {
                   const roomName = user.roomName;
                   const dpUrl = user.user.dpUrl ? user.user.dpUrl : "";
@@ -494,10 +569,76 @@ export default function Home() {
                   );
                 })
               : ""}
+
+              {/* render contacts from DB */}
+              {isSearching === true && filterResults && filterResults.length !== 0 ? filterResults.map((singleRoom, i) => {
+                if(singleRoom.roomName) {
+                  const roomName = singleRoom.roomName;
+                  const dpUrl = singleRoom.user.dpUrl ? singleRoom.user.dpUrl : "";
+                  const latestMessage =
+                      singleRoom.messages && singleRoom.messages.length > 0
+                        ? singleRoom.messages[singleRoom.messages.length - 1]
+                        : "",
+                    lastMessage =
+                      latestMessage && latestMessage.sender === "admin"
+                        ? `You: ${latestMessage.message}`
+                        : latestMessage && latestMessage.sender !== "admin"
+                        ? `${latestMessage.message}`
+                        : `Start A conversation with ${roomName}`,
+                    // LtestMessageSender = latestMessage ? latestMessage.sender : '',
+                    latestMessageTime = latestMessage ? latestMessage.time : "";
+
+                  return (
+                    <Contact
+                      key={i}
+                      isActive={i === activeIndexSearch}
+                      onClick={() => handleSearchResultClickRooms(i)}
+                      name={roomName}
+                      dpUrl={dpUrl}
+                      lastMessage={lastMessage}
+                      lastTime={latestMessageTime}
+                      unreadMessages={5}
+                    />
+                  );
+                } else {
+                  const roomName = singleRoom[0];
+                  const dpUrl = singleRoom[1]?.user?.dpurl ? singleRoom[1].user.dpurl : "";
+                  const latestMessage =
+                    singleRoom[1]?.messages && singleRoom[1].messages.length > 0
+                      ? singleRoom[1].messages[singleRoom[1].messages.length - 1]
+                      : null; // Modified to handle case where there are no messages
+                  const lastMessage =
+                    latestMessage && latestMessage.sender === "admin"
+                      ? `You: ${latestMessage.message}`
+                      : latestMessage && latestMessage.sender !== "admin"
+                      ? `${latestMessage.message}`
+                      : `Start A conversation with ${roomName}`;
+                  const latestMessageTime = latestMessage
+                    ? latestMessage.time
+                    : "";
+
+                  return (
+                    <Contact
+                      key={i}
+                      isActive={i === activeIndexRooms}
+                      onClick={() => handleContactClickRooms(i)}
+                      name={roomName}
+                      dpUrl={dpUrl}
+                      lastMessage={lastMessage}
+                      lastTime={latestMessageTime}
+                      unreadMessages={5}
+                    />
+                  );
+
+                }
+                
+                }) : ""
+
+              }
           </div>
         </div>
         {/* display whoever's isActive is true */}
-        {activeIndexRooms !== -1 || activeIndexUsers !== -1 ? (
+        {activeIndexRooms !== -1 || activeIndexUsers !== -1 || activeIndexSearch !== -1? (
           <div className="flex flex-col w-full justify-between">
             <div className="flex fex-row justify-between border-b border-[#EEEEEE] px-2 py-5">
               <div className="userData flex flex-row items-center space-x-3">
@@ -506,6 +647,8 @@ export default function Home() {
                   src={
                     activeIndexUsers !== -1
                       ? dbUsers[activeIndexUsers].user.dpUrl
+                      : activeIndexSearch !== -1
+                      ? (filterResults[activeIndexSearch].roomName ? filterResults[activeIndexSearch].user.dpUrl : filterResults[activeIndexSearch][1].user.dpurl)
                       : rooms[activeIndexRooms][1].user.dpurl
                   } //{rooms[activeIndex][1].user.dpurl}
                   width={42}
@@ -515,7 +658,10 @@ export default function Home() {
                 <p className="text-[#494345] font-medium">
                   {activeIndexUsers !== -1
                     ? dbUsers[activeIndexUsers].user.username
-                    : rooms[activeIndexRooms][0]}{" "}
+                    : activeIndexSearch !== -1
+                    ? (filterResults[activeIndexSearch].roomName ? filterResults[activeIndexSearch].user.username : filterResults[activeIndexSearch][0])
+                    : rooms[activeIndexRooms][0]}
+                    {" "}
                 </p>
               </div>
               <button
@@ -545,6 +691,8 @@ export default function Home() {
                   title={`you are chatting with ${
                     activeIndexUsers !== -1
                       ? dbUsers[activeIndexUsers].user.username
+                      : activeIndexSearch !== -1
+                      ? (filterResults[activeIndexSearch].roomName ? filterResults[activeIndexSearch].user.username : filterResults[activeIndexSearch][0])
                       : rooms[activeIndexRooms][0]
                   } now`}
                 >
