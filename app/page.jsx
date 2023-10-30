@@ -317,7 +317,27 @@ export default function Home() {
     );
     setActiveIndexUsers(-1);
     setActiveIndexSearch(-1);
+
+    if (index >= 0) {
+    const updatedRooms = [...rooms];
+
+    // Check if the selected room exists
+    if (updatedRooms[index] && updatedRooms[index][1]?.messages) {
+      // Update the isSeen property for each message
+      updatedRooms[index][1].messages = updatedRooms[index][1].messages.map(
+        (message) => ({
+          ...message,
+          isSeen: true,
+        })
+      );
+
+      // Update the state with the modified rooms
+      setRooms(updatedRooms);
+      socket.emit("update-rooms-unseen-messages", updatedRooms)
+    }
+  }
   };
+  console.log({rooms});
 
   const handleSearchResultClickRooms = (index) => {
     setActiveIndexSearch((prevActiveIndex) =>
@@ -550,6 +570,7 @@ export default function Home() {
                   const latestMessageTime = latestMessage
                     ? latestMessage.time
                     : "";
+                  const unreadMessages = room[1]?.messages.filter(message => message.isSeen === false);
 
                   return (
                     <Contact
@@ -560,7 +581,7 @@ export default function Home() {
                       dpUrl={dpUrl}
                       lastMessage={lastMessage}
                       lastTime={latestMessageTime}
-                      unreadMessages={5}
+                      unreadMessages={unreadMessages.length > 0 ? unreadMessages.length : ""}
                     />
                   );
                 })}
@@ -795,9 +816,7 @@ export default function Home() {
                 : ""}
 
               {/* Get the messages from socket.io for the particular room */}
-              {(
-
-                dbUsers?.[activeIndexUsers] ||
+              {(dbUsers?.[activeIndexUsers] ||
                 rooms?.[activeIndexRooms] ||
                 filterResults?.[activeIndexSearch]) &&
                 rooms
@@ -808,20 +827,7 @@ export default function Home() {
                       return room[0] === rooms[activeIndexRooms][0];
                     } else if (activeIndexSearch !== -1) {
                       return room[0] === filterResults[activeIndexSearch].roomName || filterResults[activeIndexSearch][0];
-                      // if (
-                      //   room[activeIndexSearch] &&
-                      //   room[activeIndexSearch].roomName !== undefined
-                      // ) {
-                      //   console.log(".roomName exists", filterResults[activeIndexSearch].roomName);
-                      //   return room[0] === filterResults[activeIndexSearch].roomName;
-                      // } else {
-                      //   console.log("room[0] exists", filterResults[activeIndexSearch][0]);
-                      //   return room[0] === filterResults[activeIndexSearch][0];
-                      // }
                     }
-                    // activeIndexUsers !== -1
-                    // ? room[0] === dbUsers[activeIndexUsers].roomName
-                    // : room[0] === rooms[activeIndexRooms][0]
                   })?.[1]
                   ?.messages.map((message, i) => {
                     // Check if the message is not in dbMessages
