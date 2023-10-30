@@ -13,7 +13,7 @@ io.on("connect", (socket) => {
     if (user.admin) {
       socket.join("admin-room");
       rooms.set("admin-room", {
-        admin: "admin",
+        // admin: "admin",
         user: user,
         messages: [],
       });
@@ -21,7 +21,7 @@ io.on("connect", (socket) => {
       const roomName = user.username;
       if (!rooms.has(roomName) && roomName !== undefined) {
         rooms.set(roomName, {
-          admin: "admin",
+          // admin: "admin",
           user: user,
           messages: [],
         });
