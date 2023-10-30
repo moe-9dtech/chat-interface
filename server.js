@@ -61,7 +61,7 @@ io.on("connect", (socket) => {
 
   socket.on("send-client-message", (data) => {
     console.log("event: send-client-message");
-    const { room, message, date, time, sender } = data;
+    const { room, message, date, time, sender, isSeen } = data;
     socket.to("admin-room").emit("receive-client-message", data);
     const roomDetails = rooms.get(room);
     // Update the messages array
@@ -70,6 +70,7 @@ io.on("connect", (socket) => {
       message: message,
       date: date,
       time: time,
+      isSeen: isSeen
     });
     // Update the room details back into the Map
     rooms.set(room, roomDetails);
@@ -77,6 +78,11 @@ io.on("connect", (socket) => {
 
     socket.to("admin-room").emit("room-list", Array.from(rooms.entries()));
   });
+
+  socket.on("update-rooms-unseen-messages", (updatedRooms) => {
+    console.log(updatedRooms[0][1]);
+    
+  })
 
   socket.on("disconnect", () => {
     const roomName = Array.from(rooms.keys()).find(

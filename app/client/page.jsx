@@ -135,6 +135,7 @@ export default function Home() {
       date: localDate,
       time: localTime,
       sender: newUser?.username || "",
+      isSeen: false
     };
     // Send the message to the selected room
     newSocket?.emit("send-client-message", userObj);
@@ -144,6 +145,7 @@ export default function Home() {
       message: userInput,
       date: localDate,
       time: localTime,
+      isSeen: false
     };
 
     setRoom((prevRoom) => {
