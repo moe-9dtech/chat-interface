@@ -26,8 +26,8 @@ export default function Home() {
   const apiUrl = "//92.205.188.229:5000/api/";
   const socketUrl = "//periodsocket.9dtechnologies.dev";
   let dd = [];
-  
-  console.log({filterResults});
+
+  console.log({ filterResults });
   console.log(rooms);
 
   var newSocket;
@@ -39,11 +39,9 @@ export default function Home() {
       reconnectionAttempts: 5,
       maxHttpBufferSize: 10 * 1024 * 1024,
       allowEIO3: true,
-      // reconnectionDelay: 1000,
     });
     setSocket(newSocket);
     newSocket.on("connect", () => {
-      // const admin = {username: newUser?.username, admin: true};
       newSocket.emit("new-user", {
         usrname: "admin",
         email: "admin@gmail.com",
@@ -89,23 +87,39 @@ export default function Home() {
   }, []);
 
   socket?.on("receive-client-message", (userObj) => {
-    const { sender, message, date, time } = userObj;
+    const { sender, message, date, time, isSeen } = userObj;
     const receivedMessage = {
       sender: sender,
       message: message,
       date: date,
       time: time,
+      isSeen: isSeen,
     };
 
+    console.log({ activeIndexRooms, activeIndexSearch, activeIndexUsers });
+    if (
+      activeIndexRooms !== -1 &&
+      receivedMessage.sender === rooms[activeIndexRooms]?.[0]
+    ) {
+      console.log("true");
+      socket.emit("update-rooms-unseen-messages", receivedMessage.sender);
+      // rooms[activeIndexRooms]?.[1].messages.map((message) => (message.isSeen = true));
+    }
     // Update your state to include the received message
     setRooms((prevRooms) => {
       return prevRooms.map((room) => {
         if (room[0] === userObj.room) {
+          // Create a new messages array with updated isSeen values
+          const updatedMessages = room[1].messages.map((message) => ({
+            ...message,
+            isSeen: true,
+          }));
+
           return [
             room[0],
             {
               ...room[1],
-              messages: [...room[1].messages, receivedMessage],
+              messages: [...updatedMessages, receivedMessage],
             },
           ];
         }
@@ -254,14 +268,14 @@ export default function Home() {
         return prevRooms.map((room) => {
           if (
             activeIndexUsers !== -1
-          ? dbUsers?.[activeIndexUsers].roomName
-          : activeIndexSearch !== -1
-          ? filterResults[activeIndexSearch].roomName
-            ? filterResults[activeIndexSearch].user.username
-            : filterResults[activeIndexSearch][0]
-          : activeIndexRooms !== -1
-          ? rooms[activeIndexRooms][0] //rooms[activeIndex][0]
-          : " "
+              ? dbUsers?.[activeIndexUsers].roomName
+              : activeIndexSearch !== -1
+              ? filterResults[activeIndexSearch].roomName
+                ? filterResults[activeIndexSearch].user.username
+                : filterResults[activeIndexSearch][0]
+              : activeIndexRooms !== -1
+              ? rooms[activeIndexRooms][0] //rooms[activeIndex][0]
+              : " "
           ) {
             if (room[1] && room[1].messages) {
               return {
@@ -315,29 +329,27 @@ export default function Home() {
     setActiveIndexRooms((prevActiveIndex) =>
       prevActiveIndex === index ? -1 : index
     );
+
     setActiveIndexUsers(-1);
     setActiveIndexSearch(-1);
 
-    if (index >= 0) {
-    const updatedRooms = [...rooms];
+    if (index !== -1) {
+      const updatedRooms = [...rooms];
 
-    // Check if the selected room exists
-    if (updatedRooms[index] && updatedRooms[index][1]?.messages) {
-      // Update the isSeen property for each message
-      updatedRooms[index][1].messages = updatedRooms[index][1].messages.map(
-        (message) => ({
-          ...message,
-          isSeen: true,
-        })
-      );
-
-      // Update the state with the modified rooms
-      setRooms(updatedRooms);
-      socket.emit("update-rooms-unseen-messages", updatedRooms)
+      // Check if the selected room exists
+      if (updatedRooms[index] && updatedRooms[index][1]?.messages) {
+        // Update the isSeen property for each message
+        updatedRooms[index][1].messages = updatedRooms[index][1].messages.map(
+          (message) => ({
+            ...message,
+            isSeen: true,
+          })
+        );
+        // Update the state with the modified rooms
+        socket.emit("update-rooms-unseen-messages", rooms[index][0]);
+      }
     }
-  }
   };
-  console.log({rooms});
 
   const handleSearchResultClickRooms = (index) => {
     setActiveIndexSearch((prevActiveIndex) =>
@@ -387,32 +399,32 @@ export default function Home() {
   }
 
   function handleSearchInput(input) {
-  setSearchInput(input);
-  setIsSearching(true);
+    setSearchInput(input);
+    setIsSearching(true);
 
-  if (input.trim() === "") {
-    setFilterResults(null);
-  } else {
-    const foundRooms = new Map(); // Use a Map to store unique room names
+    if (input.trim() === "") {
+      setFilterResults(null);
+    } else {
+      const foundRooms = new Map(); // Use a Map to store unique room names
 
-    totalRooms.forEach((room) => {
-      let roomName = '';
+      totalRooms.forEach((room) => {
+        let roomName = "";
 
-      if (Array.isArray(room)) {
-        roomName = room[0];
-      } else if (room.roomName) {
-        roomName = room.roomName;
-      }
+        if (Array.isArray(room)) {
+          roomName = room[0];
+        } else if (room.roomName) {
+          roomName = room.roomName;
+        }
 
-      if (roomName.includes(input) && !foundRooms.has(roomName)) {
-        foundRooms.set(roomName, room);
-      }
-    });
+        if (roomName.includes(input) && !foundRooms.has(roomName)) {
+          foundRooms.set(roomName, room);
+        }
+      });
 
-    const uniqueRooms = [...foundRooms.values()]; // Convert the values back to an array
-    setFilterResults(uniqueRooms.length > 0 ? uniqueRooms : null);
+      const uniqueRooms = [...foundRooms.values()]; // Convert the values back to an array
+      setFilterResults(uniqueRooms.length > 0 ? uniqueRooms : null);
+    }
   }
-}
 
   function searchValuesSetter() {
     if (rooms.length > 0 && !dbUsers) {
@@ -570,7 +582,9 @@ export default function Home() {
                   const latestMessageTime = latestMessage
                     ? latestMessage.time
                     : "";
-                  const unreadMessages = room[1]?.messages.filter(message => message.isSeen === false);
+                  const unreadMessages = room[1]?.messages.filter(
+                    (message) => message.isSeen === false
+                  );
 
                   return (
                     <Contact
@@ -581,7 +595,9 @@ export default function Home() {
                       dpUrl={dpUrl}
                       lastMessage={lastMessage}
                       lastTime={latestMessageTime}
-                      unreadMessages={unreadMessages.length > 0 ? unreadMessages.length : ""}
+                      unreadMessages={
+                        unreadMessages.length > 0 ? unreadMessages.length : ""
+                      }
                     />
                   );
                 })}
@@ -618,10 +634,10 @@ export default function Home() {
                   );
                 })
               : ""}
-
-            {/* render contacts from DB */}
+            {/* render contact from search results */}
             {isSearching === true && filterResults && filterResults.length !== 0
               ? filterResults.map((singleRoom, i) => {
+                  // if the search result is in db
                   if (singleRoom.roomName) {
                     const roomName = singleRoom.roomName;
                     const dpUrl = singleRoom.user.dpUrl
@@ -654,6 +670,7 @@ export default function Home() {
                         unreadMessages={5}
                       />
                     );
+                    // if the search result is in live-chat rooms
                   } else {
                     const roomName = singleRoom[0];
                     const dpUrl = singleRoom[1]?.user?.dpurl
@@ -826,7 +843,10 @@ export default function Home() {
                     } else if (activeIndexRooms !== -1) {
                       return room[0] === rooms[activeIndexRooms][0];
                     } else if (activeIndexSearch !== -1) {
-                      return room[0] === filterResults[activeIndexSearch].roomName || filterResults[activeIndexSearch][0];
+                      return (
+                        room[0] === filterResults[activeIndexSearch].roomName ||
+                        filterResults[activeIndexSearch][0]
+                      );
                     }
                   })?.[1]
                   ?.messages.map((message, i) => {

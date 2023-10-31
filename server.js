@@ -31,7 +31,6 @@ io.on("connect", (socket) => {
     socket.emit("room-list", Array.from(rooms.entries()));
   });
   socket.on("send-admin-message", (data) => {
-    console.log("event: send-admin-message");
     const { room, message, date, time, sender } = data;
     if (rooms.get(room)) {
       const roomDetails = rooms.get(room);
@@ -56,11 +55,9 @@ io.on("connect", (socket) => {
     // Update the room details back into the Map
     socket.emit("room-list", Array.from(rooms.entries()));
     socket.to(room).emit("get-admin-message", data);
-    console.log(data);
   });
 
   socket.on("send-client-message", (data) => {
-    console.log("event: send-client-message");
     const { room, message, date, time, sender, isSeen } = data;
     socket.to("admin-room").emit("receive-client-message", data);
     const roomDetails = rooms.get(room);
@@ -74,14 +71,24 @@ io.on("connect", (socket) => {
     });
     // Update the room details back into the Map
     rooms.set(room, roomDetails);
-    console.log("single room after setting it: ", roomDetails);
+    // console.log("single room after setting it: ", rooms);
 
     socket.to("admin-room").emit("room-list", Array.from(rooms.entries()));
   });
 
-  socket.on("update-rooms-unseen-messages", (updatedRooms) => {
-    console.log(updatedRooms[0][1]);
-    
+  socket.on("update-rooms-unseen-messages", (roomName) => {
+
+      if (rooms.has(roomName)) {
+        const roomDetails = rooms.get(roomName);
+
+        roomDetails.messages = roomDetails.messages.map((message) => ({
+          ...message,
+          isSeen: true,
+        }));
+        rooms.set(roomName, roomDetails);
+        socket.emit("room-list", Array.from(rooms.entries()));
+        console.log(roomDetails);
+      }
   })
 
   socket.on("disconnect", () => {
