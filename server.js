@@ -67,7 +67,7 @@ io.on("connect", (socket) => {
       message: message,
       date: date,
       time: time,
-      isSeen: isSeen
+      isSeen: isSeen,
     });
     // Update the room details back into the Map
     rooms.set(room, roomDetails);
@@ -77,19 +77,19 @@ io.on("connect", (socket) => {
   });
 
   socket.on("update-rooms-unseen-messages", (roomName) => {
+    if (rooms.has(roomName)) {
+      const roomDetails = rooms.get(roomName);
 
-      if (rooms.has(roomName)) {
-        const roomDetails = rooms.get(roomName);
+      roomDetails.messages = roomDetails.messages.map((message) => ({
+        ...message,
+        isSeen: true,
+      }));
+      rooms.set(roomName, roomDetails);
+      socket.emit("room-list", Array.from(rooms.entries()));
+      console.log(roomDetails);
+    }
+  });
 
-        roomDetails.messages = roomDetails.messages.map((message) => ({
-          ...message,
-          isSeen: true,
-        }));
-        rooms.set(roomName, roomDetails);
-        socket.emit("room-list", Array.from(rooms.entries()));
-        console.log(roomDetails);
-      }
-  })
 
   socket.on("disconnect", () => {
     const roomName = Array.from(rooms.keys()).find(

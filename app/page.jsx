@@ -2,7 +2,7 @@
 // Admin Code
 import SortDropdown from "./components/sortDropdown";
 import Contact from "./components/contact";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useLayoutEffect } from "react";
 import { io } from "socket.io-client";
 import Image from "next/image";
 
@@ -26,9 +26,7 @@ export default function Home() {
   const apiUrl = "//92.205.188.229:5000/api/";
   const socketUrl = "//periodsocket.9dtechnologies.dev";
   let dd = [];
-
-  console.log({ filterResults });
-  console.log(rooms);
+  // let currentRoom = activeIndexRooms;
 
   var newSocket;
 
@@ -86,7 +84,8 @@ export default function Home() {
     };
   }, []);
 
-  socket?.on("receive-client-message", (userObj) => {
+  useEffect(() => {
+  function updateSeenMessages(userObj, activeIndexRooms) {
     const { sender, message, date, time, isSeen } = userObj;
     const receivedMessage = {
       sender: sender,
@@ -95,16 +94,13 @@ export default function Home() {
       time: time,
       isSeen: isSeen,
     };
-
-    console.log({ activeIndexRooms, activeIndexSearch, activeIndexUsers });
-    if (
-      activeIndexRooms !== -1 &&
-      receivedMessage.sender === rooms[activeIndexRooms]?.[0]
-    ) {
-      console.log("true");
+    console.log("before if ", activeIndexRooms);
+    if (activeIndexRooms !== -1 && receivedMessage.sender === rooms[activeIndexRooms]?.[0]){
+      console.log("condition is met");
+      console.log({activeIndexRooms});
       socket.emit("update-rooms-unseen-messages", receivedMessage.sender);
       // rooms[activeIndexRooms]?.[1].messages.map((message) => (message.isSeen = true));
-    }
+    } 
     // Update your state to include the received message
     setRooms((prevRooms) => {
       return prevRooms.map((room) => {
@@ -112,9 +108,8 @@ export default function Home() {
           // Create a new messages array with updated isSeen values
           const updatedMessages = room[1].messages.map((message) => ({
             ...message,
-            isSeen: true,
+            isSeen: receivedMessage.isSeen
           }));
-
           return [
             room[0],
             {
@@ -126,7 +121,22 @@ export default function Home() {
         return room;
       });
     });
-  });
+  }
+  const handleMessageReceived = (userObj) => {
+    console.log("inside event listener: ", activeIndexRooms);
+    updateSeenMessages(userObj, activeIndexRooms);
+  }
+  socket?.on("receive-client-message", handleMessageReceived); 
+
+  return () => {
+    socket?.off("receive-client-message", handleMessageReceived);
+  }
+  }, [activeIndexRooms])
+  
+
+  useEffect(() => {
+    console.log("activeIndexRooms changed", activeIndexRooms);
+  }, [activeIndexRooms])
 
   // Get all users from Db to display them as individual chats
   async function getDbUsers() {
@@ -153,11 +163,9 @@ export default function Home() {
       });
   }
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     getDbUsers();
   }, []);
-
-  useEffect(() => {}, [filterResults]);
 
   // Function to Get Messages From Database
   async function getDbMessages() {
@@ -184,6 +192,7 @@ export default function Home() {
           : " ",
     };
 
+    console.log("before fetch", activeIndexRooms);
     await fetch(localApiUrl + endPoint, {
       method: "POST",
       body: JSON.stringify(payload),
@@ -200,6 +209,8 @@ export default function Home() {
       .then((data) => {
         setDbMessages(data);
       });
+
+    console.log("after fetch", activeIndexRooms);
   }
   useEffect(() => {
     getDbMessages();
@@ -329,25 +340,11 @@ export default function Home() {
     setActiveIndexRooms((prevActiveIndex) =>
       prevActiveIndex === index ? -1 : index
     );
-
     setActiveIndexUsers(-1);
     setActiveIndexSearch(-1);
-
     if (index !== -1) {
-      const updatedRooms = [...rooms];
-
-      // Check if the selected room exists
-      if (updatedRooms[index] && updatedRooms[index][1]?.messages) {
-        // Update the isSeen property for each message
-        updatedRooms[index][1].messages = updatedRooms[index][1].messages.map(
-          (message) => ({
-            ...message,
-            isSeen: true,
-          })
-        );
         // Update the state with the modified rooms
         socket.emit("update-rooms-unseen-messages", rooms[index][0]);
-      }
     }
   };
 
@@ -402,10 +399,11 @@ export default function Home() {
     setSearchInput(input);
     setIsSearching(true);
 
+    // if user deleted the search
     if (input.trim() === "") {
       setFilterResults(null);
     } else {
-      const foundRooms = new Map(); // Use a Map to store unique room names
+      const foundRooms = new Map();
 
       totalRooms.forEach((room) => {
         let roomName = "";
