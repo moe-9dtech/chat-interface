@@ -28,16 +28,16 @@ export default function Home() {
       console.log({ xyz });
 
       const user = {
-        username: "junaid",
-        email: "junaid@gmail.com",
-        dpurl: "https://picsum.photos/200",
+        username: "saad",
+        email: "saad@gmail.com",
+        dpUrl: "https://picsum.photos/200",
         admin: false,
       };
       setNewUser(user);
       socket.emit("new-user", {
         username: user.username,
         email: user.email,
-        dpurl: user.dpurl,
+        dpUrl: user.dpUrl,
         admin: user.admin,
       });
       setIsSocketInitialized(true);

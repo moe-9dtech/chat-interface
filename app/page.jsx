@@ -94,12 +94,11 @@ export default function Home() {
         time: time,
         isSeen: isSeen,
       };
-      console.log("before if ", activeIndexUsers);
+      console.log("before if ", activeIndexRooms);
       if (
         (activeIndexRooms !== -1 && receivedMessage.sender === rooms[activeIndexRooms]?.[0]) || 
-        (activeIndexUsers !== -1 && rooms.findIndex(room => room[0] === dbUsers[activeIndexUsers].roomName))
+        (activeIndexUsers !== -1 && rooms.findIndex(room => room[0] === dbUsers[activeIndexUsers].roomName) !== -1)
       ) {
-        console.log("condition is met");
         console.log({ activeIndexUsers });
         socket.emit("update-rooms-unseen-messages", receivedMessage.sender);
         // rooms[activeIndexRooms]?.[1].messages.map((message) => (message.isSeen = true));
@@ -572,7 +571,7 @@ export default function Home() {
                 )
                 .map((room, i) => {
                   const roomName = room[0];
-                  const dpUrl = room[1]?.user?.dpurl ? room[1].user.dpurl : "";
+                  const dpUrl = room[1]?.user?.dpUrl ? room[1].user.dpUrl : "";
                   const latestMessage =
                     room[1]?.messages && room[1].messages.length > 0
                       ? room[1].messages[room[1].messages.length - 1]
@@ -755,8 +754,8 @@ export default function Home() {
                       : activeIndexSearch !== -1
                       ? filterResults[activeIndexSearch].roomName
                         ? filterResults[activeIndexSearch].user.dpUrl
-                        : filterResults[activeIndexSearch][1].user.dpurl
-                      : rooms[activeIndexRooms][1].user.dpurl
+                        : filterResults[activeIndexSearch][1].user.dpUrl
+                      : rooms[activeIndexRooms][1].user.dpUrl
                   } //{rooms[activeIndex][1].user.dpurl}
                   width={42}
                   height={42}
