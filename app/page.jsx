@@ -85,58 +85,60 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-  function updateSeenMessages(userObj, activeIndexRooms) {
-    const { sender, message, date, time, isSeen } = userObj;
-    const receivedMessage = {
-      sender: sender,
-      message: message,
-      date: date,
-      time: time,
-      isSeen: isSeen,
-    };
-    console.log("before if ", activeIndexRooms);
-    if (activeIndexRooms !== -1 && receivedMessage.sender === rooms[activeIndexRooms]?.[0]){
-      console.log("condition is met");
-      console.log({activeIndexRooms});
-      socket.emit("update-rooms-unseen-messages", receivedMessage.sender);
-      // rooms[activeIndexRooms]?.[1].messages.map((message) => (message.isSeen = true));
-    } 
-    // Update your state to include the received message
-    setRooms((prevRooms) => {
-      return prevRooms.map((room) => {
-        if (room[0] === userObj.room) {
-          // Create a new messages array with updated isSeen values
-          const updatedMessages = room[1].messages.map((message) => ({
-            ...message,
-            isSeen: receivedMessage.isSeen
-          }));
-          return [
-            room[0],
-            {
-              ...room[1],
-              messages: [...updatedMessages, receivedMessage],
-            },
-          ];
-        }
-        return room;
+    function updateSeenMessages(userObj, activeIndexRooms) {
+      const { sender, message, date, time, isSeen } = userObj;
+      const receivedMessage = {
+        sender: sender,
+        message: message,
+        date: date,
+        time: time,
+        isSeen: isSeen,
+      };
+      console.log("before if ", activeIndexUsers);
+      if (
+        (activeIndexRooms !== -1 && receivedMessage.sender === rooms[activeIndexRooms]?.[0]) || 
+        (activeIndexUsers !== -1 && rooms.findIndex(room => room[0] === dbUsers[activeIndexUsers].roomName))
+      ) {
+        console.log("condition is met");
+        console.log({ activeIndexUsers });
+        socket.emit("update-rooms-unseen-messages", receivedMessage.sender);
+        // rooms[activeIndexRooms]?.[1].messages.map((message) => (message.isSeen = true));
+      }
+      // Update your state to include the received message
+      setRooms((prevRooms) => {
+        return prevRooms.map((room) => {
+          if (room[0] === userObj.room) {
+            // Create a new messages array with updated isSeen values
+            const updatedMessages = room[1].messages.map((message) => ({
+              ...message,
+              isSeen: receivedMessage.isSeen,
+            }));
+            return [
+              room[0],
+              {
+                ...room[1],
+                messages: [...updatedMessages, receivedMessage],
+              },
+            ];
+          }
+          return room;
+        });
       });
-    });
-  }
-  const handleMessageReceived = (userObj) => {
-    console.log("inside event listener: ", activeIndexRooms);
-    updateSeenMessages(userObj, activeIndexRooms);
-  }
-  socket?.on("receive-client-message", handleMessageReceived); 
+    }
+    const handleMessageReceived = (userObj) => {
+      console.log("inside event listener: ", activeIndexRooms);
+      updateSeenMessages(userObj, activeIndexRooms);
+    };
+    socket?.on("receive-client-message", handleMessageReceived);
 
-  return () => {
-    socket?.off("receive-client-message", handleMessageReceived);
-  }
-  }, [activeIndexRooms])
-  
+    return () => {
+      socket?.off("receive-client-message", handleMessageReceived);
+    };
+  }, [activeIndexRooms, activeIndexUsers]);
 
   useEffect(() => {
     console.log("activeIndexRooms changed", activeIndexRooms);
-  }, [activeIndexRooms])
+  }, [activeIndexRooms]);
 
   // Get all users from Db to display them as individual chats
   async function getDbUsers() {
@@ -192,7 +194,6 @@ export default function Home() {
           : " ",
     };
 
-    console.log("before fetch", activeIndexRooms);
     await fetch(localApiUrl + endPoint, {
       method: "POST",
       body: JSON.stringify(payload),
@@ -209,8 +210,6 @@ export default function Home() {
       .then((data) => {
         setDbMessages(data);
       });
-
-    console.log("after fetch", activeIndexRooms);
   }
   useEffect(() => {
     getDbMessages();
@@ -333,9 +332,16 @@ export default function Home() {
       prevActiveIndex === index ? -1 : index
     );
     setActiveIndexRooms(-1);
-    setActiveIndexSearch(-1);
+    setActiveIndexSearch(-1);     
+    if(index !== -1 && rooms.findIndex(room => room[0] === dbUsers[index].roomName)) {
+      socket.emit("update-rooms-unseen-messages", dbUsers[index].roomName)
+      console.log(dbUsers[index].roomName);
+    }
+
+    
   };
 
+  console.log(rooms);
   const handleContactClickRooms = (index) => {
     setActiveIndexRooms((prevActiveIndex) =>
       prevActiveIndex === index ? -1 : index
@@ -343,8 +349,8 @@ export default function Home() {
     setActiveIndexUsers(-1);
     setActiveIndexSearch(-1);
     if (index !== -1) {
-        // Update the state with the modified rooms
-        socket.emit("update-rooms-unseen-messages", rooms[index][0]);
+      // Update the state with the modified rooms
+      socket.emit("update-rooms-unseen-messages", rooms[index][0]);
     }
   };
 
@@ -605,18 +611,41 @@ export default function Home() {
               ? dbUsers.map((user, i) => {
                   const roomName = user.roomName;
                   const dpUrl = user.user.dpUrl ? user.user.dpUrl : "";
-                  const latestMessage =
+                  let latestMessage = "";
+                  let unreadMessages = "";
+                  let lastMessage = "";
+                  let latestMessageTime = "";
+
+                  // Check if the room exists in rooms array
+                  const roomIndex = rooms.findIndex(
+                    (room) => room[0] === roomName
+                  );
+                  if (roomIndex !== -1) {
+                    // Fetch from rooms
+                    const roomMessages = rooms[roomIndex][1].messages;
+                    latestMessage =
+                      roomMessages && roomMessages.length > 0
+                        ? roomMessages[roomMessages.length - 1]
+                        : "";
+                    unreadMessages = roomMessages.filter(
+                      (message) => message.isSeen === false
+                    );
+                  } else {
+                    // Fetch from dbUsers
+                    latestMessage =
                       user.messages && user.messages.length > 0
                         ? user.messages[user.messages.length - 1]
-                        : "",
-                    lastMessage =
-                      latestMessage && latestMessage.sender === "admin"
-                        ? `You: ${latestMessage.message}`
-                        : latestMessage && latestMessage.sender !== "admin"
-                        ? `${latestMessage.message}`
-                        : `Start A conversation with ${roomName}`,
-                    // LtestMessageSender = latestMessage ? latestMessage.sender : '',
-                    latestMessageTime = latestMessage ? latestMessage.time : "";
+                        : "";
+                    unreadMessages = ""
+                  }
+
+                  lastMessage =
+                    latestMessage && latestMessage.sender === "admin"
+                      ? `You: ${latestMessage.message}`
+                      : latestMessage && latestMessage.sender !== "admin"
+                      ? `${latestMessage.message}`
+                      : `Start A conversation with ${roomName}`;
+                  latestMessageTime = latestMessage ? latestMessage.time : "";
 
                   return (
                     <Contact
@@ -627,11 +656,14 @@ export default function Home() {
                       dpUrl={dpUrl}
                       lastMessage={lastMessage}
                       lastTime={latestMessageTime}
-                      unreadMessages={5}
+                      unreadMessages={
+                        unreadMessages.length > 0 ? unreadMessages.length : ""
+                      }
                     />
                   );
                 })
               : ""}
+
             {/* render contact from search results */}
             {isSearching === true && filterResults && filterResults.length !== 0
               ? filterResults.map((singleRoom, i) => {

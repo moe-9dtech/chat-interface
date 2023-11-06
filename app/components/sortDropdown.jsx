@@ -42,7 +42,7 @@ export default function SortDropdown({}) {
           aria-labelledby="menu-button"
         >
           <div className="py-1 px-5 divide-y divide-[#F24187]" role="none">
-            <a
+            {/* <a
               className="flex flex-row justify-between items-center font-normal py-2 text-sm hover:cursor-pointer hover:text-[#F24187]"
               role="menuitem"
               id="menu-item-0"
@@ -68,7 +68,7 @@ export default function SortDropdown({}) {
                   />
                 </svg>
               )}
-            </a>
+            </a> */}
 
             <a
               className="flex flex-row justify-between items-center font-normal py-2 text-sm hover:cursor-pointer hover:text-[#F24187]"

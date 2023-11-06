@@ -28,8 +28,8 @@ export default function Home() {
       console.log({ xyz });
 
       const user = {
-        username: "saad",
-        email: "saad@gmail.com",
+        username: "junaid",
+        email: "junaid@gmail.com",
         dpurl: "https://picsum.photos/200",
         admin: false,
       };
