@@ -7,19 +7,19 @@ import { io } from "socket.io-client";
 import Image from "next/image";
 
 export default function Home() {
-  const [isSocketInitialized, setIsSocketInitialized] = useState(false);
-  const [activeIndexRooms, setActiveIndexRooms] = useState(-1);
-  const [activeIndexUsers, setActiveIndexUsers] = useState(-1);
-  const [activeIndexSearch, setActiveIndexSearch] = useState(-1);
-  const [rooms, setRooms] = useState([]); //set rooms list -userNames-
-  const [dbMessages, setDbMessages] = useState();
-  const [dbUsers, setDbUsers] = useState([]);
-  const [adminInput, setAdminInput] = useState("");
-  const [socket, setSocket] = useState();
-  const [totalRooms, setTotalRooms] = useState([]);
-  const [filterResults, setFilterResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchInput, setSearchInput] = useState("");
+  const [isSocketInitialized, setIsSocketInitialized] = useState(false); // for testing if the socket is disconnected
+  const [activeIndexRooms, setActiveIndexRooms] = useState(-1); // trace the active chat from live chat rooms
+  const [activeIndexUsers, setActiveIndexUsers] = useState(-1); // trace the active chat from database rooms
+  const [activeIndexSearch, setActiveIndexSearch] = useState(-1); // trace the active chat from search results
+  const [rooms, setRooms] = useState([]); // This saves the chats/rooms from live chat
+  const [dbMessages, setDbMessages] = useState(); //Get the messages of a specific room from database
+  const [dbUsers, setDbUsers] = useState([]); // Get all the users in the database
+  const [adminInput, setAdminInput] = useState(""); // Set the input field of the admin
+  const [socket, setSocket] = useState(); // Save current socket inside a state to use it later inside functions 
+  const [totalRooms, setTotalRooms] = useState([]); // Get all chats from both database and from live chat rooms
+  const [filterResults, setFilterResults] = useState([]); // Save the filter search results and display them
+  const [isSearching, setIsSearching] = useState(false); // Track if the user is currently searching
+  const [searchInput, setSearchInput] = useState(""); // set the input field of the search bar
 
   const localApiUrl = "http://localhost:5000/api/";
   const localSocketUrl = "http://localhost:3001";
@@ -35,7 +35,7 @@ export default function Home() {
     newSocket = io(localSocketUrl, {
       reconnection: true,
       reconnectionAttempts: 5,
-      maxHttpBufferSize: 10 * 1024 * 1024,
+      maxHttpBufferSize: 10 * 1024 * 1024, // 10MB
       allowEIO3: true,
     });
     setSocket(newSocket);
