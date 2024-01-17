@@ -101,5 +101,6 @@ io.on("connect", (socket) => {
     }
   });
 });
-const PORT = 3001;
-httpServer.listen(PORT, () => {});
+const port = process.env.SERVER_PORT || 3000;
+console.log("from server", {port});
+httpServer.listen(port, () => {});
