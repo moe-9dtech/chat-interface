@@ -21,10 +21,13 @@ export default function Home() {
   const [isSearching, setIsSearching] = useState(false); // Track if the user is currently searching
   const [searchInput, setSearchInput] = useState(""); // set the input field of the search bar
 
-  const localApiUrl = "http://localhost:5000/api/";
-  const localSocketUrl = "http://localhost:3001";
-  const apiUrl = "//92.205.188.229:5000/api/";
-  const socketUrl = "//periodsocket.9dtechnologies.dev";
+  const localApiUrl = process.env.NEXT_PUBLIC_API_URL;
+  const localSocketUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
+  console.log({localApiUrl}, {localSocketUrl});
+  // const localApiUrl = "http://localhost:5000/api/";
+  // const localSocketUrl = "http://localhost:3001";
+  // const apiUrl = "//92.205.188.229:5000/api/";
+  // const socketUrl = "//periodsocket.9dtechnologies.dev";
   let dd = [];
   // let currentRoom = activeIndexRooms;
 

@@ -9,10 +9,12 @@ export default function Home() {
   const [room, setRoom] = useState();
   const [dbMessages, setDbMessages] = useState(null);
   const [isSocketInitialized, setIsSocketInitialized] = useState(false);
-  const localApiUrl = "http://localhost:5000/api/";
-  const localSocketUrl = "http://localhost:3001";
-  const apiUrl = "//92.205.188.229:5000/api/";
-  const socketUrl = "//periodsocket.9dtechnologies.dev";
+  const localApiUrl = process.env.NEXT_PUBLIC_API_URL;
+  const localSocketUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
+  // const localApiUrl = "http://localhost:5000/api/";
+  // const localSocketUrl = "http://localhost:3001";
+  // const apiUrl = "//92.205.188.229:5000/api/";
+  // const socketUrl = "//periodsocket.9dtechnologies.dev";
   var socket;
   const rooms = new Map();
   useEffect(() => {

@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start -- -p 4000",
     "lint": "next lint",
-    "node": "nodemone server"
+    "node": "nodemon server"
   },
   "dependencies": {
     "autoprefixer": "10.4.16",
