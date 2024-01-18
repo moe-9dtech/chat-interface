@@ -101,6 +101,6 @@ io.on("connect", (socket) => {
     }
   });
 });
-const port = process.env.SERVER_PORT || 3000;
+const port = process.env.SERVER_PORT || 3000; // for live version make it 3000
 console.log("from server", {port});
 httpServer.listen(port, () => {});
